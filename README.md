@@ -2,7 +2,7 @@
 
 (IN DEVELOPMENT) 
 
-In the writtin waveguides domain we have difficulties to produce a nice cylindrical guide for every inscription depth and for any substrate
+In the writtin waveguides domain we have difficulties to produce a nice cylindrical waveguide for every inscription depth and for any substrate
 
 This project is an attempt to have a robust code that will produce the phase pattern that we put on a SLM (Spatial Light Modulator) in the waveguides writtin setup.
 
