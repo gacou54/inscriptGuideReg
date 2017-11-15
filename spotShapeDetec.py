@@ -80,44 +80,18 @@ def round_score(file_name, target_file_name):
     total_h = 0
     for x in idx_h:
         count += 1
-        total_h += count*x
-    center_x = total_h/np.sum(idx_h)
+        if x != 0:
+            total_h += count
+    center_x = total_h/np.count_nonzero(idx_h)
     total_v = 0
     count = 0
     for x in idx_v:
         count += 1
-        total_v += count*x
-    center_y = total_v/np.sum(idx_v)
+        if x != 0:
+            total_v += count
+    center_y = total_v/np.count_nonzero(idx_v)
     center = [center_y,center_x]
-    print(center)
-    # finding center
-    idx_h = []
-    for i in range(len(ct)):
-        if np.sum(ct[i]) != 0:
-            idx_h.append(i)
-            break
 
-    for i in range(len(ct)):
-        if np.sum(ct[-i]) != 0:
-            idx_h.append(len(ct) - i) 
-            break
-
-
-    idx_w = []
-    for j in range(len(ct[0])):
-        if np.sum(ct[:, j]) != 0:
-            idx_w.append(j) 
-            break
-
-    for j in range(len(ct[0])):
-        if np.sum(ct[:, -j]) != 0:
-            idx_w.append(len(ct[0]) - j) 
-            break
-
-    # the center: ct[int(np.mean(idx_h)), int(np.mean(idx_w))]
-    #center = (int(np.mean(idx_h)), int(np.mean(idx_w)))
-    
-     
     # calculate the mean radius and the score
     radius = []
     for i in range(len(ct)):
@@ -145,22 +119,32 @@ def round_score(file_name, target_file_name):
     img_gs.save(target_file_name)
 
 
-    #calibration_visualisation(radius_mean,center,img_arrN.shape,ct)
+    calibration_visualisation(radius_mean,center,img_arrN.shape,ct)
 
     return score
 
 def calibration_visualisation(radius, center, image_shape, contour):
-    print(center)
+
     ct = np.zeros(shape=image_shape)
+
     for x in range(image_shape[0]):
         for y in range(image_shape[1]):
-            if (x < center[0] + radius//4 and x > center[0] - radius//4 and y < int(center[1]) + 0.5 and y > int(center[1]) - 0.5) \
-                or (y < center[1] + radius//4 and y > center[1] - radius//4 and x < int(center[0])+ 0.5 and x > int(center[0]) - 0.5):
+            #dessine la croix du centre
+            if (x < center[0] + radius//4 and x > center[0] - radius//4 and y < int(center[1]) + 2 and y > int(center[1]) - 2) \
+                or (y < center[1] + radius//4 and y > center[1] - radius//4 and x < int(center[0])+ 2 and x > int(center[0]) - 2):
                 ct[x][y] = 1
-            if (x-center[0])**2 + (y-center[1])**2 < radius**2 + radius//2 and (x-center[0])**2 + (y-center[1])**2 > radius**2 - radius//2:
+            #dessine le cercle de calibration
+            if (x-center[0])**2 + (y-center[1])**2 < (radius + 1)**2 and (x-center[0])**2 + (y-center[1])**2 > (radius-1)**2:
                 ct[x][y] = 1
+
+    #superpose la bitmap et montre
     import matplotlib.pyplot as plt
-    plt.imshow(ct + contour)
+    total = ct+contour
+    for x in range(total.shape[0]):
+        for y in range(total.shape[1]):
+            if total[x][y] != 0:
+                total[x][y] = 1
+    plt.imshow(total)
     plt.show()
 
 
