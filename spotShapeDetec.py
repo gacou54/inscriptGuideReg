@@ -73,13 +73,29 @@ def round_score(file_name, target_file_name):
             if abs(img_arrN[i, j+1] - img_arrN[i, j]) > crit:
                 ct[i, j] = 1
 
-
+    #find the true center
+    idx_h = np.sum(ct,axis=0)
+    idx_v = np.sum(ct,axis=1)
+    count = 0
+    total_h = 0
+    for x in idx_h:
+        count += 1
+        total_h += count*x
+    center_x = total_h/np.sum(idx_h)
+    total_v = 0
+    count = 0
+    for x in idx_v:
+        count += 1
+        total_v += count*x
+    center_y = total_v/np.sum(idx_v)
+    center = [center_y,center_x]
+    print(center)
     # finding center
     idx_h = []
     for i in range(len(ct)):
         if np.sum(ct[i]) != 0:
-            idx_h.append(i) 
-            break 
+            idx_h.append(i)
+            break
 
     for i in range(len(ct)):
         if np.sum(ct[-i]) != 0:
@@ -99,7 +115,7 @@ def round_score(file_name, target_file_name):
             break
 
     # the center: ct[int(np.mean(idx_h)), int(np.mean(idx_w))]
-    center = (int(np.mean(idx_h)), int(np.mean(idx_w)))
+    #center = (int(np.mean(idx_h)), int(np.mean(idx_w)))
     
      
     # calculate the mean radius and the score
@@ -128,8 +144,25 @@ def round_score(file_name, target_file_name):
     img_gs = Image.fromarray(np.uint8(ct)*255)
     img_gs.save(target_file_name)
 
+
+    #calibration_visualisation(radius_mean,center,img_arrN.shape,ct)
+
     return score
-    
+
+def calibration_visualisation(radius, center, image_shape, contour):
+    print(center)
+    ct = np.zeros(shape=image_shape)
+    for x in range(image_shape[0]):
+        for y in range(image_shape[1]):
+            if (x < center[0] + radius//4 and x > center[0] - radius//4 and y < int(center[1]) + 0.5 and y > int(center[1]) - 0.5) \
+                or (y < center[1] + radius//4 and y > center[1] - radius//4 and x < int(center[0])+ 0.5 and x > int(center[0]) - 0.5):
+                ct[x][y] = 1
+            if (x-center[0])**2 + (y-center[1])**2 < radius**2 + radius//2 and (x-center[0])**2 + (y-center[1])**2 > radius**2 - radius//2:
+                ct[x][y] = 1
+    import matplotlib.pyplot as plt
+    plt.imshow(ct + contour)
+    plt.show()
+
 
 if __name__ == "__main__":
     names_list = [["imgTest/spot_silice_1.jpg", "imgTest/img_test_silice_1.png"],
