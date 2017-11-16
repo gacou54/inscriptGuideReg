@@ -46,7 +46,7 @@ def round_score(file_name, target_file_name):
     for i in img_arrN:
         if max(i) > max_value_of_array:
             max_value_of_array = max(i)
-    
+
 
     # renormalization with the maximum value
     for i in range(len(img_arrN)):
@@ -124,6 +124,15 @@ def round_score(file_name, target_file_name):
     return score
 
 def calibration_visualisation(radius, center, image_shape, contour):
+    '''
+    Affiches la figure de contour ainsi que le centre et le cercle sur lequel les
+    calculs de score sont effectués.
+    :param radius: Rayon du cercle du calcul de score
+    :param center: Centre du cercle du calcul de score
+    :param image_shape: Hauteur et largeur de l'image
+    :param contour: Contour trouvé précédemment
+    :return: None
+    '''
 
     ct = np.zeros(shape=image_shape)
 
@@ -138,15 +147,13 @@ def calibration_visualisation(radius, center, image_shape, contour):
                 ct[x][y] = 1
 
     #superpose la bitmap et montre
-    import matplotlib.pyplot as plt
     total = ct+contour
     for x in range(total.shape[0]):
         for y in range(total.shape[1]):
             if total[x][y] != 0:
-                total[x][y] = 1
-    plt.imshow(total)
-    plt.show()
-
+                total[x][y] = 255
+    Image.fromarray(total).show()
+    return None
 
 if __name__ == "__main__":
     names_list = [["imgTest/spot_silice_1.jpg", "imgTest/img_test_silice_1.png"],
