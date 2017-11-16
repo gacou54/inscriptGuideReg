@@ -19,7 +19,7 @@ from scipy import signal as sig
 kernel_test = np.array([[1, 2, 1], [1, -4, 1], [1, -2, 1]])
 
 
-def round_score(file_name, target_file_name):
+def round_score(file_name, target_file_name, save_calibration = False):
     """
         the function takes an images and try to
         quantify the roundness of the photo generated
@@ -105,7 +105,7 @@ def round_score(file_name, target_file_name):
     for i in radius:
         score += abs(i - radius_mean)/radius_mean
 
-    print(score/len(radius))
+    #print(score/len(radius))
 
     # getting the cercle with the radius_mean as the radius
     # for i in range(len(ct)):
@@ -118,12 +118,12 @@ def round_score(file_name, target_file_name):
     img_gs = Image.fromarray(np.uint8(ct)*255)
     img_gs.save(target_file_name)
 
-
-    calibration_visualisation(radius_mean,center,img_arrN.shape,ct)
+    if save_calibration:
+        calibration_visualisation(radius_mean,center,img_arrN.shape,ct,target_file_name)
 
     return score
 
-def calibration_visualisation(radius, center, image_shape, contour):
+def calibration_visualisation(radius, center, image_shape, contour, filename):
     '''
     Affiches la figure de contour ainsi que le centre et le cercle sur lequel les
     calculs de score sont effectués.
@@ -152,7 +152,7 @@ def calibration_visualisation(radius, center, image_shape, contour):
         for y in range(total.shape[1]):
             if total[x][y] != 0:
                 total[x][y] = 255
-    Image.fromarray(total).show()
+    #Image.fromarray(total).save("ScreenCaps_contour/Calibration/")
     return None
 
 if __name__ == "__main__":

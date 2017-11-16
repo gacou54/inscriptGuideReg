@@ -17,7 +17,7 @@ def capture_box(x1,y1,x2,y2,filename = "default",directory = "ScreenCaps"):
     im.save("{}/{}.jpg".format(directory,filename))
     return None
 
-def calibrate_screenshot(x1,y1,x2,y2):
+def calibrate_screenshot(x1,y1,x2,y2,savefile = False):
     '''
     Affiches l'écran avec en pointillé l'encadré contenant la boîte entre (x1,y1), (x2,y2)
     :param x1: Int: Coordonnée x du coin supérieur gauche de la boîte à capturer [pixels]
@@ -37,7 +37,10 @@ def calibrate_screenshot(x1,y1,x2,y2):
                 im[x][y] = (count%2)*255
             if (y == y1 - 1 or y == y1 + 1 or y == y2 - 1 or y == y2 + 1) and x > x1 and x < x2:
                 im[x][y] = (count%2)*255
-    Image.fromarray(im).show()
+    if savefile:
+        Image.fromarray(im).save("{}.jpg".format(savefile))
+    else:
+        Image.fromarray(im).show()
     return None
 
 if __name__ == "__main__":
