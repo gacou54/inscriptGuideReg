@@ -86,7 +86,7 @@ def example_run_hadoc():
     score_list = []
     for point in range(test_points.shape[0]):
         print("\rprogress : {}%".format(100 * point / test_points.shape[0]), end="")
-        score_list.append(round_score("ScreenCaps/image{}.bmp".format(point), "image{}contour.bmp".format(point),
+        score_list.append(round_score("ScreenCaps/image{}.png".format(point), "image{}contour.png".format(point),
                                       save_calibration=True))
     np.savetxt("Score_list", score_list)
     # Fitting
@@ -145,7 +145,7 @@ def extract_score(number,x1,y1,x2,y2,test_point):
     time.sleep(1)  # pour que le slm change de forme
     capture_box(x1, y1, x2, y2, "image{}".format(number), directory="ScreenCaps")
     time.sleep(0.2)
-    score = round_score("ScreenCaps/image{}.bmp".format(number), "image{}contour.bmp".format(number),
+    score = round_score("ScreenCaps/image{}.png".format(number), "image{}contour.png".format(number),
                                   save_calibration=True)
     return score
 if __name__ == "__main__":

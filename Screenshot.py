@@ -14,7 +14,7 @@ def capture_box(x1,y1,x2,y2,filename = "default",directory = "ScreenCaps"):
     :return: None
     '''
     im=ImageGrab.grab(bbox=(x1,y1,x2,y2))
-    im.save("{}/{}.bmp".format(directory,filename))
+    im.save("{}/{}.png".format(directory,filename))
     return None
 
 def calibrate_screenshot(x1,y1,x2,y2,savefile = False):
@@ -38,7 +38,7 @@ def calibrate_screenshot(x1,y1,x2,y2,savefile = False):
             if (y == y1 - 1 or y == y1 + 1 or y == y2 - 1 or y == y2 + 1) and x > x1 and x < x2:
                 im[y][x] = (count%2)*255
     if savefile:
-        Image.fromarray(im).save("{}.jpg".format(savefile))
+        Image.fromarray(im).save("{}.png".format(savefile))
     else:
         Image.fromarray(im).show()
     return None
