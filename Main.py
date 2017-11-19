@@ -99,13 +99,13 @@ def example_run_bayesian():
     number = 20
     space = {"score" : choco.uniform(0,1)}
     for x in range(dimension):
-        space["{}".format(x)] = choco.uniform(mean[x] - variances[x]/2,mean[x] + variances[x]/2)
+        space["{}".format(x)] = choco.uniform(mean[x] - variances[x],mean[x] + variances[x])
 
-
-    #space = space = {"x": choco.uniform(-5, 5),
-    #     "y": choco.uniform(-2, 3)}
-    #connection =
-    #choco.Bayes(connection,space)
+    #pip install sclite3
+    #sclite3 TEST.db
+    conn = choco.SQLiteConnection("sqlite:///TEST.db")
+    conn.lock()
+    bay = choco.Bayes(conn,space)
 
 def extract_score(number,x1,y1,x2,y2,test_point):
     '''
@@ -127,4 +127,5 @@ def extract_score(number,x1,y1,x2,y2,test_point):
                                   save_calibration=True)
     return score
 if __name__ == "__main__":
-    example_run_hadoc()
+    #example_run_hadoc()
+    example_run_bayesian()
