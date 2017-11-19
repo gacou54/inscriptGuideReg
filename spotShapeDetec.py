@@ -121,7 +121,7 @@ def round_score(file_name, target_file_name, save_calibration = False, target_di
     if save_calibration:
         calibration_visualisation(radius_mean,center,img_arrN.shape,ct,target_file_name,target_directory)
 
-    return score
+    return score/len(radius)
 
 def calibration_visualisation(radius, center, image_shape, contour, filename, directory):
     '''

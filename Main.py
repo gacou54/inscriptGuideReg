@@ -65,7 +65,7 @@ def example_run_hadoc():
     dimension = len(mean)
     number = 20
 
-    x1, y1, x2, y2 = 276, 342, 726, 794
+    x1, y1, x2, y2 = 60, 342, 726, 725
     # x1, y1, x2, y2 = set_box_inputs(JustScreenshot=True)
 
     print("generating test data")
@@ -86,7 +86,7 @@ def example_run_hadoc():
     score_list = []
     for point in range(test_points.shape[0]):
         print("\rprogress : {}%".format(100 * point / test_points.shape[0]), end="")
-        score_list.append(round_score("ScreenCaps/image{}.jpg".format(point), "image{}contour.jpg".format(point),
+        score_list.append(round_score("ScreenCaps/image{}.bmp".format(point), "image{}contour.bmp".format(point),
                                       save_calibration=True))
     np.savetxt("Score_list", score_list)
     # Fitting
@@ -95,9 +95,10 @@ def example_run_bayesian():
     # initialisation
     mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
+    x1, y1, x2, y2 = 60, 342, 726, 725
     dimension = len(mean)
     number = 20
-    space = {"score" : choco.uniform(0,1)}
+    space = {}
     for x in range(dimension):
         space["{}".format(x)] = choco.uniform(mean[x] - variances[x],mean[x] + variances[x])
 
@@ -105,7 +106,28 @@ def example_run_bayesian():
     #sclite3 TEST.db
     conn = choco.SQLiteConnection("sqlite:///TEST.db")
     conn.lock()
-    bay = choco.Bayes(conn,space)
+    bay = choco.Bayes(conn,space, clear_db= True)
+    (token,point_next) = bay.next()
+    point = format_next(point_next)
+    all_pos = []
+    all_score = []
+    for x in range(number):
+        loss = extract_score(x, x1, y1, x2, y2, point)
+        bay.update(token, loss)
+        (token, point_next) = bay.next()
+        point = format_next(point_next)
+        print("\rProgress : {}%".format(100*x//number),end= "")
+        all_pos.append(point)
+        all_score.append(1-loss)
+    np.savetxt("Score_list",all_score)
+    np.savetxt("Point_list",all_pos)
+    return True
+def format_next(dictio):
+    position_list = []
+
+    for key in range(len(dictio.keys())) :
+        position_list.append(dictio[str(key)])
+    return position_list
 
 def extract_score(number,x1,y1,x2,y2,test_point):
     '''
@@ -123,7 +145,7 @@ def extract_score(number,x1,y1,x2,y2,test_point):
     time.sleep(1)  # pour que le slm change de forme
     capture_box(x1, y1, x2, y2, "image{}".format(number), directory="ScreenCaps")
     time.sleep(0.2)
-    score = round_score("ScreenCaps/image{}.jpg".format(number), "image{}contour.jpg".format(point),
+    score = round_score("ScreenCaps/image{}.bmp".format(number), "image{}contour.bmp".format(number),
                                   save_calibration=True)
     return score
 if __name__ == "__main__":
