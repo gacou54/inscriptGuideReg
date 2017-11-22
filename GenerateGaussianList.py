@@ -15,7 +15,7 @@ def generate_sequence(mean, variances, dimensions, number):
     for x in range(dimensions):
         initial_values[x] = np.random.normal(mean[x],variances[x],number)
 
-    return initial_values
+    return initial_values.transpose()
 
 if __name__ == "__main__":
     variances = range(0,100)
