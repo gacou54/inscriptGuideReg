@@ -152,16 +152,17 @@ def calibration_visualisation(radius, center, image_shape, contour, filename):
         for y in range(total.shape[1]):
             if total[x][y] != 0:
                 total[x][y] = 255
-    #Image.fromarray(total).save("ScreenCaps_contour/Calibration/")
+
+    Image.fromarray(np.uint8(total), 'L').save("test.png")
     return None
 
 if __name__ == "__main__":
     names_list = [["imgTest/spot_silice_1.jpg", "imgTest/img_test_silice_1.png"],
-                   # ["imgTest/spot_BGG_1.png", "imgTest/img_test_BGG_1.png"],
+                   ["imgTest/spot_BGG_1.png", "imgTest/img_test_BGG_1.png"]]
                    # ["imgTest/spot_BGG_2.png", "imgTest/img_test_BGG_2.png"], 
-                   ["imgTest/spot_BGG_3.png", "imgTest/img_test_BGG_3.png"], 
+                   # ["imgTest/spot_BGG_3.png", "imgTest/img_test_BGG_3.png"], 
                    # ["imgTest/spot_BGG_4.png", "imgTest/img_test_BGG_4.png"], 
-                   ["imgTest/spot_BGG_5.png", "imgTest/img_test_BGG_5.png"]]
+                   # ["imgTest/spot_BGG_5.png", "imgTest/img_test_BGG_5.png"]]
         
     for name in names_list:
         round_score(name[0], name[1])
