@@ -143,6 +143,7 @@ def example_run_bayesian():
     bay = choco.Bayes(conn,space, clear_db= True)
     (token,point_next) = bay.next()
     point = format_next(point_next)
+
     all_pos = []
     all_score = []
     for x in range(number):
@@ -153,14 +154,19 @@ def example_run_bayesian():
         print("\rProgress : {}%".format(100*x//number),end= "")
         all_pos.append(point)
         all_score.append(1-loss)
+
     np.savetxt("Score_list",all_score)
     np.savetxt("Point_list",all_pos)
+
     return True
+
+
 def format_next(dictio):
     position_list = []
 
     for key in range(len(dictio.keys())) :
         position_list.append(dictio[str(key)])
+
     return position_list
 
 def extract_score(number,x1,y1,x2,y2,test_point):
@@ -182,6 +188,8 @@ def extract_score(number,x1,y1,x2,y2,test_point):
     score = round_score("ScreenCaps/image{}.png".format(number), "image{}contour.png".format(number),
                                   save_calibration=True)
     return score
+
+
 if __name__ == "__main__":
     #example_run_hadoc()
     example_run_bayesian()

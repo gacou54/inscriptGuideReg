@@ -39,10 +39,13 @@ class MainWindow(QMainWindow):
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(exitAction)
         ##############################################
-
+        
+        # main window
         self.img_widget = ImgWindow()
+        # second screen window
         self.img_SLM_widget = ImgSLM()
         self.img_SLM_widget.setAutoFillBackground(True)
+
         palette = self.img_SLM_widget.palette()
         palette.setColor(self.img_SLM_widget.backgroundRole(), QtCore.Qt.black)
         self.img_SLM_widget.setPalette(palette)
@@ -65,6 +68,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('The LCOS-SLM Imgage Generator')
         # self.show_widgets()
 
+
     @QtCore.pyqtSlot()
     def show_widgets(self):
         self.img_widget.show()
@@ -77,15 +81,17 @@ class ImgWindow(QWidget):
     def __init__(self, parent=None):
         super(QWidget, self).__init__(parent)
         # calibration window
-        self.calibWindow = CalibWindow(self)
+        self.calibWindow = CalibWindow()
 
+        # running at start
+        self._running = True
         # layout main window
         bigGrid = QGridLayout()
 
         # image
         ##############################################
         self.img = QImage(792, 600, QImage.Format_Grayscale8)
-        # # Initialisation
+        # Initialisation
         self.img.fill(0)
 
         self.label = QLabel(self)
@@ -97,7 +103,6 @@ class ImgWindow(QWidget):
         self.corrArrayAndCorrValue = lp.correctionsArray(1030)
 
         # Button
-        # btnGrid = QGridLayout()
         self.goBtn = QPushButton("Go")
         self.goBtn.setFixedSize(250, 60)
         bigGrid.addWidget(self.goBtn, *(8, 0))
@@ -119,51 +124,43 @@ class ImgWindow(QWidget):
 
         self.setLayout(bigGrid)
 
-        array = (self.corrArrayAndCorrValue[0].astype(np.uint8))*self.corrArrayAndCorrValue[1]
+        # array = (self.corrArrayAndCorrValue[0].astype(np.uint8))*self.corrArrayAndCorrValue[1]
 
-        for i in range(600):
-            for j in range(792):
-                element = array[i, j]
-                gray = QtGui.QColor(QtGui.qRgb(element, element, element))
-                self.img.setPixelColor(QPoint(j, i), gray)
+        # for i in range(600):
+        #     for j in range(792):
+        #         element = array[i, j]
+        #         gray = QtGui.QColor(QtGui.qRgb(element, element, element))
+        #         self.img.setPixelColor(QPoint(j, i), gray)
 
-        self.label.setPixmap(QPixmap.fromImage(self.img))
-        self.procStart.emit(self.img)
+        # self.label.setPixmap(QPixmap.fromImage(self.img))
+        # self.procStart.emit(self.img)
 
 
     def stopBtnPushed(self):
         # TODO should pause the program
-        print('Pas encore implémenté')
+        if self._running == False:
+            self._running = True
+            print('false')
+
+        elif self._running == True:
+            self._running = False
+            print('true')
+
     
     
     def calibBtnPushed(self):
-        # TODO
-        print('test')
         self.calibWindow.show()
 
-        
 
     @QtCore.pyqtSlot()
     def img_SLM_procDone(self):
         self.raise_()
 
     @QtCore.pyqtSlot()
-    def goBtnPushed(self):
+    def goBtnPushed(self, array = np.zeros(shape=(LENGHT_HA, LENGHT_LA))):
         print("Starting ....")
-
-        print('Getting the values')
-
-        # example
-        # if self.centre.isChecked():
-        #     colors = colors.astype(np.uint8) + (255*lp.centre(self.centre_a.value(), self.centre_h.value())).astype(np.uint8)
-
-        print('Application des corrections')
-        array = (self.corrArrayAndCorrValue[0].astype(np.uint8))*self.corrArrayAndCorrValue[1]
-
-
-
-        print('Creation of the image ...')
-
+        print("Values attribution ...")
+        array = (array.astype(np.uint8) + self.corrArrayAndCorrValue[0].astype(np.uint8))*self.corrArrayAndCorrValue[1]
         for i in range(600):
             for j in range(792):
                 element = array[i, j]
@@ -174,9 +171,11 @@ class ImgWindow(QWidget):
 
         self.label.setPixmap(QPixmap.fromImage(self.img))
         self.procStart.emit(self.img)
+        print('Done')
 
+        # time sleep
+        time.sleep(4)
         print('Ready')
-        return None
 
 
 class ImgSLM(QWidget):
@@ -207,16 +206,44 @@ class ImgSLM(QWidget):
         self.raise_()
 
 
-class CalibWindow(QMainWindow):
+class CalibWindow(QWidget):
     def __init__(self, parent=None):
         super(CalibWindow, self).__init__(parent)
         self.grid = QGridLayout()
 
-        self.pos_1 = QSpinBox()
+        # number
+        for i in range(1, 21):
+            exec("self.no_{0} = QLabel('{0}.')".format(i))
+            exec("self.grid.addWidget(self.no_{0}, {0}, 0)".format(i))
 
-        self.grid.addWidget(self.pos_1, 0, 0)
+        # starting position
+        self.labelPosi = QLabel('Starting position')
+        self.grid.addWidget(self.labelPosi, 0, 1)
 
+        for i in range(1, 21):
+            exec("self.pos_{0} = QDoubleSpinBox()".format(i))
+            exec("self.grid.addWidget(self.pos_{0}, {0}, 1)".format(i))
+
+        # range [min, max]
+        self.labelMin = QLabel('min')
+        self.labelMax = QLabel('max')
+        self.grid.addWidget(self.labelMin, 0, 2)
+        self.grid.addWidget(self.labelMax, 0, 3)
+
+        for i in range(1, 21):
+            exec("self.rangeMin_{0} = QDoubleSpinBox()".format(i))
+            exec("self.rangeMax_{0} = QDoubleSpinBox()".format(i))
+            exec("self.grid.addWidget(self.rangeMin_{0}, {0}, 2)".format(i))
+            exec("self.grid.addWidget(self.rangeMax_{0}, {0}, 3)".format(i))
+
+        self.closeBtn = QPushButton('Close')
+        self.closeBtn.clicked.connect(self.closeBtnPushed)
+        self.grid.addWidget(self.closeBtn, 20, 4)
+        
         self.setLayout(self.grid)
+        
+    def closeBtnPushed(self):
+        self.close()
 
 
 if __name__ == '__main__':
