@@ -104,7 +104,7 @@ def example_run_hadoc():
     # Prise de données
     print(test_points.shape)
     for point in range(test_points.shape[0]):
-        set_zernik_polynomial(test_points[point])
+        set_zernike_polynomial(test_points[point])
 
         time.sleep(1)  # pour que le slm change de forme
         capture_box(x1, y1, x2, y2, "image{}".format(point), directory="ScreenCaps")
@@ -180,7 +180,7 @@ def extract_score(number,x1,y1,x2,y2,test_point):
     :param test_point: Poids des polynomes de zernick à tester
     :return:
     '''
-    set_zernik_polynomial(test_point)
+    set_zernike_polynomial(test_point)
 
     time.sleep(1)  # pour que le slm change de forme
     capture_box(x1, y1, x2, y2, "image{}".format(number), directory="ScreenCaps")

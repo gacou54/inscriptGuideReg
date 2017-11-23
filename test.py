@@ -8,7 +8,7 @@ class ImgWindow(QWidget):
     def __init__(self):
         super().__init__()
         print("1")
-        calibrate_screenshot(0,0,0,0,True)
+        calibrate_screenshot(0,0,0,0,"1Calibration.jpg")
 
         self.image = QLabel()
         self.image.setPixmap(QPixmap("ScreenCaps/1Calibration.jpg"))
