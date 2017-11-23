@@ -8,10 +8,10 @@ class ImgWindow(QWidget):
     def __init__(self):
         super().__init__()
         print("1")
-        calibrate_screenshot(0,0,0,0,"1Calibration.jpg")
+        calibrate_screenshot(0,0,0,0,"1Calibration")
 
         self.image = QLabel()
-        self.image.setPixmap(QPixmap("ScreenCaps/1Calibration.jpg"))
+        self.image.setPixmap(QPixmap("ScreenCaps/1Calibration.png"))
         self.image.setObjectName("image")
         self.image.mousePressEvent = self.getPos
         self.corners = []
