@@ -94,9 +94,24 @@ def czernike(int n, int m):
     cdef int j
     for i in range(LENGTH_HA):
         for j in range(LENGTH_LA):
-            array[i, j] = czernike_xy(n , m, j, i)
+            array[i, j] = czernike_xy(n, m, j, i) * 255
+    return array.astype(np.uint8)
 
-    return array
 
+# def cwichZernike(int x, int y, *args):
+#     cdef float zernikeFinal_xy = 0
+#     for arg in args:
+#         zernikeFinal_xy += czernike_xy(arg[0], arg[1], x, y)
+#     return zernikeFinal_xy
+
+
+# def zernike_list_creation(const int width, *args):
+#     colors = np.zeros(shape=(600,792))
+#     cdef int i
+#     cdef int j
+#     for i in range(600):
+#         for j in range(792):
+#             colors[i,j] = cwichZernike(j, i, *args) * 255
+#     return colors.astype(np.uint8)
 
 

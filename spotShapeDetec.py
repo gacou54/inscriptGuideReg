@@ -90,7 +90,7 @@ def round_score(file_name, target_file_name, save_calibration = False, target_di
         if x != 0:
             total_v += count
     center_y = total_v/np.count_nonzero(idx_v)
-    center = [center_y,center_x]
+    center = [center_y, center_x]
 
     # calculate the mean radius and the score
     radius = []
@@ -113,13 +113,14 @@ def round_score(file_name, target_file_name, save_calibration = False, target_di
     #         if ct[i, j] != 1:
     #             if np.sqrt((i-center[0])**2 + (j-center[1])**2) <= radius_mean:
     #                 ct[i, j] = 1
-      
+
 
     img_gs = Image.fromarray(np.uint8(ct)*255)
-    img_gs.save("{}/{}".format(target_directory,target_file_name))
+    img_gs.save("{}/{}".format(target_directory,  target_file_name))
 
     if save_calibration:
-        calibration_visualisation(radius_mean,center,img_arrN.shape,ct,target_file_name,target_directory)
+        calibration_visualisation(radius_mean, center, img_arrN.shape,
+                                  ct, target_file_name, target_directory)
 
     return score/len(radius)
 
@@ -152,22 +153,17 @@ def calibration_visualisation(radius, center, image_shape, contour, filename, di
         for y in range(total.shape[1]):
             if total[x][y] != 0:
                 total[x][y] = 255
-<<<<<<< HEAD
 
-    Image.fromarray(np.uint8(total), 'L').save("test.png")
-=======
     Image.fromarray(np.uint8(total)).save("{}/Calibration/{}".format(directory,filename))
->>>>>>> 1cfdd6242b98b122db88037ef925b3586cf71fcb
     return None
 
 if __name__ == "__main__":
     names_list = [["imgTest/spot_silice_1.jpg", "imgTest/img_test_silice_1.png"],
                    ["imgTest/spot_BGG_1.png", "imgTest/img_test_BGG_1.png"]]
-                   # ["imgTest/spot_BGG_2.png", "imgTest/img_test_BGG_2.png"], 
-                   # ["imgTest/spot_BGG_3.png", "imgTest/img_test_BGG_3.png"], 
-                   # ["imgTest/spot_BGG_4.png", "imgTest/img_test_BGG_4.png"], 
+                   # ["imgTest/spot_BGG_2.png", "imgTest/img_test_BGG_2.png"],
+                   # ["imgTest/spot_BGG_3.png", "imgTest/img_test_BGG_3.png"],
+                   # ["imgTest/spot_BGG_4.png", "imgTest/img_test_BGG_4.png"],
                    # ["imgTest/spot_BGG_5.png", "imgTest/img_test_BGG_5.png"]]
-        
+
     for name in names_list:
         round_score(name[0], name[1])
-

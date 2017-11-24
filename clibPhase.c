@@ -1505,8 +1505,10 @@ static const char __pyx_k_float[] = "float";
 static const char __pyx_k_numpy[] = "numpy";
 static const char __pyx_k_range[] = "range";
 static const char __pyx_k_shape[] = "shape";
+static const char __pyx_k_uint8[] = "uint8";
 static const char __pyx_k_zeros[] = "zeros";
 static const char __pyx_k_arctan[] = "arctan";
+static const char __pyx_k_astype[] = "astype";
 static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_czernike[] = "czernike";
 static const char __pyx_k_clibPhase[] = "clibPhase";
@@ -1532,6 +1534,7 @@ static PyObject *__pyx_n_s_RuntimeError;
 static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_arctan;
 static PyObject *__pyx_n_s_array;
+static PyObject *__pyx_n_s_astype;
 static PyObject *__pyx_n_s_clibPhase;
 static PyObject *__pyx_kp_s_clibPhase_pyx;
 static PyObject *__pyx_n_s_cline_in_traceback;
@@ -1552,6 +1555,7 @@ static PyObject *__pyx_kp_s_numpy_core_umath_failed_to_impor;
 static PyObject *__pyx_n_s_range;
 static PyObject *__pyx_n_s_shape;
 static PyObject *__pyx_n_s_test;
+static PyObject *__pyx_n_s_uint8;
 static PyObject *__pyx_kp_u_unknown_dtype_code_in_numpy_pxd;
 static PyObject *__pyx_n_s_zeros;
 static PyObject *__pyx_pf_9clibPhase_czernike(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_n, int __pyx_v_m); /* proto */
@@ -2588,7 +2592,7 @@ static PyObject *__pyx_pf_9clibPhase_czernike(CYTHON_UNUSED PyObject *__pyx_self
  *     cdef int j
  *     for i in range(LENGTH_HA):             # <<<<<<<<<<<<<<
  *         for j in range(LENGTH_LA):
- *             array[i, j] = czernike_xy(n , m, j, i)
+ *             array[i, j] = czernike_xy(n, m, j, i) * 255
  */
   __pyx_t_7 = __pyx_v_9clibPhase_LENGTH_HA;
   for (__pyx_t_8 = 0; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
@@ -2598,8 +2602,8 @@ static PyObject *__pyx_pf_9clibPhase_czernike(CYTHON_UNUSED PyObject *__pyx_self
  *     cdef int j
  *     for i in range(LENGTH_HA):
  *         for j in range(LENGTH_LA):             # <<<<<<<<<<<<<<
- *             array[i, j] = czernike_xy(n , m, j, i)
- * 
+ *             array[i, j] = czernike_xy(n, m, j, i) * 255
+ *     return array.astype(np.uint8)
  */
     __pyx_t_9 = __pyx_v_9clibPhase_LENGTH_LA;
     for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
@@ -2608,9 +2612,9 @@ static PyObject *__pyx_pf_9clibPhase_czernike(CYTHON_UNUSED PyObject *__pyx_self
       /* "clibPhase.pyx":97
  *     for i in range(LENGTH_HA):
  *         for j in range(LENGTH_LA):
- *             array[i, j] = czernike_xy(n , m, j, i)             # <<<<<<<<<<<<<<
+ *             array[i, j] = czernike_xy(n, m, j, i) * 255             # <<<<<<<<<<<<<<
+ *     return array.astype(np.uint8)
  * 
- *     return array
  */
       __pyx_t_11 = __pyx_v_i;
       __pyx_t_12 = __pyx_v_j;
@@ -2627,20 +2631,73 @@ static PyObject *__pyx_pf_9clibPhase_czernike(CYTHON_UNUSED PyObject *__pyx_self
         __Pyx_RaiseBufferIndexError(__pyx_t_13);
         __PYX_ERR(0, 97, __pyx_L1_error)
       }
-      *__Pyx_BufPtrStrided2d(__pyx_t_9clibPhase_DTYPE_t *, __pyx_pybuffernd_array.rcbuffer->pybuffer.buf, __pyx_t_11, __pyx_pybuffernd_array.diminfo[0].strides, __pyx_t_12, __pyx_pybuffernd_array.diminfo[1].strides) = __pyx_f_9clibPhase_czernike_xy(__pyx_v_n, __pyx_v_m, __pyx_v_j, __pyx_v_i);
+      *__Pyx_BufPtrStrided2d(__pyx_t_9clibPhase_DTYPE_t *, __pyx_pybuffernd_array.rcbuffer->pybuffer.buf, __pyx_t_11, __pyx_pybuffernd_array.diminfo[0].strides, __pyx_t_12, __pyx_pybuffernd_array.diminfo[1].strides) = (__pyx_f_9clibPhase_czernike_xy(__pyx_v_n, __pyx_v_m, __pyx_v_j, __pyx_v_i) * 255.0);
     }
   }
 
-  /* "clibPhase.pyx":99
- *             array[i, j] = czernike_xy(n , m, j, i)
- * 
- *     return array             # <<<<<<<<<<<<<<
+  /* "clibPhase.pyx":98
+ *         for j in range(LENGTH_LA):
+ *             array[i, j] = czernike_xy(n, m, j, i) * 255
+ *     return array.astype(np.uint8)             # <<<<<<<<<<<<<<
  * 
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __Pyx_INCREF(((PyObject *)__pyx_v_array));
-  __pyx_r = ((PyObject *)__pyx_v_array);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_array), __pyx_n_s_astype); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 98, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 98, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_uint8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 98, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_1))) {
+    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_1);
+    if (likely(__pyx_t_2)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_1);
+      __Pyx_INCREF(__pyx_t_2);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_1, function);
+    }
+  }
+  if (!__pyx_t_2) {
+    __pyx_t_5 = __Pyx_PyObject_CallOneArg(__pyx_t_1, __pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_GOTREF(__pyx_t_5);
+  } else {
+    #if CYTHON_FAST_PYCALL
+    if (PyFunction_Check(__pyx_t_1)) {
+      PyObject *__pyx_temp[2] = {__pyx_t_2, __pyx_t_4};
+      __pyx_t_5 = __Pyx_PyFunction_FastCall(__pyx_t_1, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+      __Pyx_GOTREF(__pyx_t_5);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    } else
+    #endif
+    #if CYTHON_FAST_PYCCALL
+    if (__Pyx_PyFastCFunction_Check(__pyx_t_1)) {
+      PyObject *__pyx_temp[2] = {__pyx_t_2, __pyx_t_4};
+      __pyx_t_5 = __Pyx_PyCFunction_FastCall(__pyx_t_1, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+      __Pyx_GOTREF(__pyx_t_5);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    } else
+    #endif
+    {
+      __pyx_t_3 = PyTuple_New(1+1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_3);
+      __Pyx_GIVEREF(__pyx_t_2); PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_2); __pyx_t_2 = NULL;
+      __Pyx_GIVEREF(__pyx_t_4);
+      PyTuple_SET_ITEM(__pyx_t_3, 0+1, __pyx_t_4);
+      __pyx_t_4 = 0;
+      __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_3, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_5);
+      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    }
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_r = __pyx_t_5;
+  __pyx_t_5 = 0;
   goto __pyx_L0;
 
   /* "clibPhase.pyx":91
@@ -5222,6 +5279,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_n_s_arctan, __pyx_k_arctan, sizeof(__pyx_k_arctan), 0, 0, 1, 1},
   {&__pyx_n_s_array, __pyx_k_array, sizeof(__pyx_k_array), 0, 0, 1, 1},
+  {&__pyx_n_s_astype, __pyx_k_astype, sizeof(__pyx_k_astype), 0, 0, 1, 1},
   {&__pyx_n_s_clibPhase, __pyx_k_clibPhase, sizeof(__pyx_k_clibPhase), 0, 0, 1, 1},
   {&__pyx_kp_s_clibPhase_pyx, __pyx_k_clibPhase_pyx, sizeof(__pyx_k_clibPhase_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
@@ -5242,6 +5300,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_range, __pyx_k_range, sizeof(__pyx_k_range), 0, 0, 1, 1},
   {&__pyx_n_s_shape, __pyx_k_shape, sizeof(__pyx_k_shape), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
+  {&__pyx_n_s_uint8, __pyx_k_uint8, sizeof(__pyx_k_uint8), 0, 0, 1, 1},
   {&__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_k_unknown_dtype_code_in_numpy_pxd, sizeof(__pyx_k_unknown_dtype_code_in_numpy_pxd), 0, 1, 0, 0},
   {&__pyx_n_s_zeros, __pyx_k_zeros, sizeof(__pyx_k_zeros), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}

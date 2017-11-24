@@ -6,6 +6,8 @@
 import sys
 import time
 import numpy as np
+import Main
+from Screenshot import calibrate_screenshot
 import matplotlib.pyplot as plt
 import libPhase as lp
 import clibPhase as clp
@@ -39,7 +41,7 @@ class MainWindow(QMainWindow):
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(exitAction)
         ##############################################
-        
+
         # main window
         self.img_widget = ImgWindow()
         # second screen window
@@ -107,10 +109,10 @@ class ImgWindow(QWidget):
         self.goBtn.setFixedSize(250, 60)
         bigGrid.addWidget(self.goBtn, *(8, 0))
 
-        self.calibBtn= QPushButton("Calibration")
+        self.calibBtn = QPushButton("Calibration")
         self.calibBtn.setFixedSize(220, 60)
         bigGrid.addWidget(self.calibBtn, *(8, 1))
-        
+
         self.stopBtn = QPushButton("Pause")
         self.stopBtn.setFixedSize(220, 60)
         bigGrid.addWidget(self.stopBtn, *(8, 2))
@@ -120,35 +122,51 @@ class ImgWindow(QWidget):
         self.goBtn.clicked.connect(self.goBtnPushed)
         self.calibBtn.clicked.connect(self.calibBtnPushed)
         self.stopBtn.clicked.connect(self.stopBtnPushed)
+
+        # calib
+        self.calib = False
+
+        # zernike polynomials
+        n_max_zernike_poly = 4
+        self.zernike_list = []
+
+        idx = []
+        for n in range(n_max_zernike_poly):
+            for m in range(-n, n+1):
+                if n % 2 == 0 and m % 2 == 0:
+                    idx.append([n, m])
+
+                elif m == 0:
+                    pass
+
+                elif n % 2 == 1 and m % 2 == 1:
+                    idx.append([n, m])
+        
+        print('Creation of the Zernike polynomials')
+        for i in idx:
+            self.zernike_list.append(clp.czernike(i[0], i[1]))
+
+        print('Done')
+        
+        self.weigths = []
+        for i in self.zernike_list:
+            self.weigths.append(1)
+
         ##############################################
-
         self.setLayout(bigGrid)
-
-        # array = (self.corrArrayAndCorrValue[0].astype(np.uint8))*self.corrArrayAndCorrValue[1]
-
-        # for i in range(600):
-        #     for j in range(792):
-        #         element = array[i, j]
-        #         gray = QtGui.QColor(QtGui.qRgb(element, element, element))
-        #         self.img.setPixelColor(QPoint(j, i), gray)
-
-        # self.label.setPixmap(QPixmap.fromImage(self.img))
-        # self.procStart.emit(self.img)
 
 
     def stopBtnPushed(self):
         # TODO should pause the program
-        if self._running == False:
+        if self._running is False:
             self._running = True
-            print('false')
 
-        elif self._running == True:
+        elif self._running is True:
             self._running = False
-            print('true')
 
-    
-    
+
     def calibBtnPushed(self):
+        self.calib = True
         self.calibWindow.show()
 
 
@@ -156,11 +174,25 @@ class ImgWindow(QWidget):
     def img_SLM_procDone(self):
         self.raise_()
 
-    @QtCore.pyqtSlot()
-    def goBtnPushed(self, array = np.zeros(shape=(LENGHT_HA, LENGHT_LA))):
+
+    def set_zernike_polynomials(self, weigths):
+        """
+            Arrange le slm selon le polynome de zernike associé au point
+
+            :param weights: ndarray: matrice D x 1 des poids associés
+                            aux polynomes dans un certain ordre
+            :return: None
+        """
         print("Starting ....")
         print("Values attribution ...")
+        # generating the weight
+        
+        array = np.zeros(shape=(LENGHT_HA, LENGHT_LA))
+        for i in range(len(self.zernike_list)):
+            array += (weigths[i] * self.zernike_list[i]).astype(np.uint8)
+            
         array = (array.astype(np.uint8) + self.corrArrayAndCorrValue[0].astype(np.uint8))*self.corrArrayAndCorrValue[1]
+
         for i in range(600):
             for j in range(792):
                 element = array[i, j]
@@ -173,9 +205,15 @@ class ImgWindow(QWidget):
         self.procStart.emit(self.img)
         print('Done')
 
-        # time sleep
-        time.sleep(4)
-        print('Ready')
+
+    @QtCore.pyqtSlot()
+    def goBtnPushed(self):
+        # example_run_bayesian()
+        self.set_zernike_polynomials(self.weigths)
+
+        # TODO petit test pour changer les poids
+        for i in range(len(self.weigths)):
+            self.weigths[i] += 10
 
 
 class ImgSLM(QWidget):
@@ -199,7 +237,6 @@ class ImgSLM(QWidget):
         self.imgLayout.addWidget(self.label)
         self.setLayout(self.imgLayout)
 
-
     @QtCore.pyqtSlot(QImage)
     def on_procStart(self, img_arg):
         self.label.setPixmap(QPixmap.fromImage(img_arg))
@@ -209,6 +246,9 @@ class ImgSLM(QWidget):
 class CalibWindow(QWidget):
     def __init__(self, parent=None):
         super(CalibWindow, self).__init__(parent)
+
+        self.cornerWindow = CornerWindow()
+
         self.grid = QGridLayout()
 
         # number
@@ -236,14 +276,54 @@ class CalibWindow(QWidget):
             exec("self.grid.addWidget(self.rangeMin_{0}, {0}, 2)".format(i))
             exec("self.grid.addWidget(self.rangeMax_{0}, {0}, 3)".format(i))
 
+        self.cornerBtn = QPushButton('Capture box')
+        self.cornerOpen = False
+        self.cornerBtn.clicked.connect(self.cornerBtnPushed)
+        self.grid.addWidget(self.cornerBtn, 19, 4)
+
         self.closeBtn = QPushButton('Close')
         self.closeBtn.clicked.connect(self.closeBtnPushed)
         self.grid.addWidget(self.closeBtn, 20, 4)
-        
+
         self.setLayout(self.grid)
-        
+
     def closeBtnPushed(self):
         self.close()
+
+    def cornerBtnPushed(self):
+        if self.cornerOpen is False:
+            self.cornerOpen = True
+            self.cornerWindow.show()
+        elif self.cornerOpen is True:
+            self.cornerOpen = False
+            self.cornerWindow.close()
+
+
+class CornerWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        print("1")
+        self.grid = QGridLayout()
+
+        calibrate_screenshot(0, 0, 0, 0, "ScreenCaps/1Calibration")
+
+        self.label = QLabel()
+        self.label.setPixmap(QPixmap("ScreenCaps/1Calibration.png"))
+        self.label.setObjectName("image")
+        self.label.mousePressEvent = self.getPos
+        self.corners = []
+
+        self.grid.addWidget(self.label)
+        self.setLayout(self.grid)
+
+    def getPos(self, event):
+        if len(self.corners) == 4:
+            self.corners = []
+        x = event.pos().x()
+        y = event.pos().y()
+        self.corners.append(x)
+        self.corners.append(y)
+        print(self.corners)
 
 
 if __name__ == '__main__':
@@ -254,4 +334,3 @@ if __name__ == '__main__':
     mwin.show()
 
     sys.exit(app.exec_())
-
