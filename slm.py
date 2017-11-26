@@ -213,7 +213,7 @@ class ImgWindow(QWidget):
 
         # TODO petit test pour changer les poids
         for i in range(len(self.weigths)):
-            self.weigths[i] += 10
+            self.weigths[i] += 4
 
 
 class ImgSLM(QWidget):
@@ -288,7 +288,14 @@ class CalibWindow(QWidget):
         self.setLayout(self.grid)
 
     def closeBtnPushed(self):
+        # getting the values 
+        for i in range(1, 21):
+            exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
+            exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
+            exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
+
         self.close()
+
 
     def cornerBtnPushed(self):
         if self.cornerOpen is False:
@@ -302,7 +309,6 @@ class CalibWindow(QWidget):
 class CornerWindow(QWidget):
     def __init__(self):
         super().__init__()
-        print("1")
         self.grid = QGridLayout()
 
         calibrate_screenshot(0, 0, 0, 0, "ScreenCaps/1Calibration")
