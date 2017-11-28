@@ -22,8 +22,8 @@ from PyQt5.QtWidgets import (QApplication, QWidget,
 from PyQt5.QtCore import Qt, QByteArray, QPoint
 from PyQt5.QtGui import (QPixmap, QImage)
 from PyQt5 import QtGui, QtCore
-
-
+from Main import *
+import pickle
 LENGHT_LA = 792
 LENGHT_HA = 600
 
@@ -70,7 +70,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('The LCOS-SLM Imgage Generator')
         # self.show_widgets()
 
-
     @QtCore.pyqtSlot()
     def show_widgets(self):
         self.img_widget.show()
@@ -101,10 +100,10 @@ class ImgWindow(QWidget):
         bigGrid.addWidget(self.label, 0, 0, 0, 3)
         ##############################################
 
-        #Message système
+        # Message système
         self.messagelabel = QLabel(self)
         self.messagelabel.setText("Test Message")
-        bigGrid.addWidget(self.messagelabel,*(9,0))
+        bigGrid.addWidget(self.messagelabel, *(9, 0))
 
         # Corrections Initialisation
         self.corrArrayAndCorrValue = lp.correctionsArray(1030)
@@ -130,6 +129,9 @@ class ImgWindow(QWidget):
 
         # calib
         self.calib = False
+        self.corners = False
+        self.variances = False
+        self.mean = False
 
         # zernike polynomials
         n_max_zernike_poly = 4
@@ -137,7 +139,7 @@ class ImgWindow(QWidget):
 
         idx = []
         for n in range(n_max_zernike_poly):
-            for m in range(-n, n+1):
+            for m in range(-n, n + 1):
                 if n % 2 == 0 and m % 2 == 0:
                     idx.append([n, m])
 
@@ -146,20 +148,19 @@ class ImgWindow(QWidget):
 
                 elif n % 2 == 1 and m % 2 == 1:
                     idx.append([n, m])
-        
+
         print('Creation of the Zernike polynomials')
         for i in idx:
             self.zernike_list.append(clp.czernike(i[0], i[1]))
 
         print('Done')
-        
+
         self.weigths = []
         for i in self.zernike_list:
             self.weigths.append(1)
 
         ##############################################
         self.setLayout(bigGrid)
-
 
     def stopBtnPushed(self):
         # TODO should pause the program
@@ -169,16 +170,13 @@ class ImgWindow(QWidget):
         elif self._running is True:
             self._running = False
 
-
     def calibBtnPushed(self):
         self.calib = True
         self.calibWindow.show()
 
-
     @QtCore.pyqtSlot()
     def img_SLM_procDone(self):
         self.raise_()
-
 
     def set_zernike_polynomials(self, weigths):
         """
@@ -191,12 +189,13 @@ class ImgWindow(QWidget):
         print("Starting ....")
         print("Values attribution ...")
         # generating the weight
-        
+
         array = np.zeros(shape=(LENGHT_HA, LENGHT_LA))
         for i in range(len(self.zernike_list)):
             array += (weigths[i] * self.zernike_list[i]).astype(np.uint8)
-            
-        array = (array.astype(np.uint8) + self.corrArrayAndCorrValue[0].astype(np.uint8))*self.corrArrayAndCorrValue[1]
+
+        array = (array.astype(np.uint8) + self.corrArrayAndCorrValue[0].astype(np.uint8)) * self.corrArrayAndCorrValue[
+            1]
 
         for i in range(600):
             for j in range(792):
@@ -210,7 +209,6 @@ class ImgWindow(QWidget):
         self.procStart.emit(self.img)
         print('Done')
 
-
     @QtCore.pyqtSlot()
     def goBtnPushed(self):
         # example_run_bayesian()
@@ -218,12 +216,89 @@ class ImgWindow(QWidget):
             self.messagelabel.setText("No calibration Data: please calibrate the progam")
             return None
         else:
-
-            self.set_zernike_polynomials(self.weigths)
+            self.example_run_bayesian()
+            #self.set_zernike_polynomials(self.weigths)
 
             # TODO petit test pour changer les poids
             for i in range(len(self.weigths)):
                 self.weigths[i] += 4
+
+    def example_run_hadoc(self):
+        # initialisation
+        mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
+        dimension = len(mean)
+        number = 20
+
+        x1, y1, x2, y2 = 60, 342, 726, 725
+        # x1, y1, x2, y2 = set_box_inputs(JustScreenshot=True)
+
+        print("generating test data")
+        test_points = generate_sequence(mean, variances, dimension, number)
+        print("gathering data")
+        # Prise de données
+        print(test_points.shape)
+        for point in range(test_points.shape[0]):
+            self.set_zernike_polynomial(test_points[point])
+
+            time.sleep(1)  # pour que le slm change de forme
+            capture_box(x1, y1, x2, y2, "image{}".format(point), directory="ScreenCaps")
+            time.sleep(0.2)
+            print("\rprogress : {}%".format(100 * point / test_points.shape[0]), end="")
+
+        # extraction du score
+        score_list = []
+        for point in range(test_points.shape[1]):
+            score_list.append(round_score("ScreenCaps/image{}.jpg".format(point), "ScreenCaps_contour/image{}contour.jpg".format(point),save_calibration= True))
+
+        print("\rextracting score")
+        score_list = []
+        for point in range(test_points.shape[0]):
+            print("\rprogress : {}%".format(100 * point / test_points.shape[0]), end="")
+            score_list.append(round_score("ScreenCaps/image{}.png".format(point), "image{}contour.png".format(point),
+                                          save_calibration=True))
+        np.savetxt("Score_list", score_list)
+        # Fitting
+
+
+    def example_run_bayesian(self):
+        # initialisation
+        mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        #mean = self.mean
+        variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
+        #variances = self.variances
+        x1, y1, x2, y2 = 60, 342, 726, 725
+        #x1, y1, x2, y2 = self.corners
+
+        dimension = len(mean)
+        number = 20
+        space = {}
+        for x in range(dimension):
+            space["{}".format(x)] = choco.uniform(mean[x] - variances[x],mean[x] + variances[x])
+
+        # pip install sclite3
+        # sclite3 TEST.db
+        conn = choco.SQLiteConnection("sqlite:///TEST.db")
+        conn.lock()
+        bay = choco.Bayes(conn, space, clear_db=True)
+        (token, point_next) = bay.next()
+        point = format_next(point_next)
+
+        all_pos = []
+        all_score = []
+        for x in range(number):
+            loss = extract_score(x, x1, y1, x2, y2, point)
+            bay.update(token, loss)
+            (token, point_next) = bay.next()
+            point = format_next(point_next)
+            print("\rProgress : {}%".format(100*x//number), end="")
+            all_pos.append(point)
+            all_score.append(1-loss)
+
+        np.savetxt("Score_list", all_score)
+        np.savetxt("Point_list", all_pos)
+
+        return True
 
 
 class ImgSLM(QWidget):
@@ -246,10 +321,6 @@ class ImgSLM(QWidget):
 
         self.imgLayout.addWidget(self.label)
         self.setLayout(self.imgLayout)
-
-
-
-
 
     @QtCore.pyqtSlot(QImage)
     def on_procStart(self, img_arg):
@@ -299,17 +370,25 @@ class CalibWindow(QWidget):
         self.closeBtn.clicked.connect(self.closeBtnPushed)
         self.grid.addWidget(self.closeBtn, 20, 4)
 
+        self.saveBtn = QPushButton('Close')
+        self.saveBtn.clicked.connect(self.saveBtnPushed)
+        self.grid.addWidget(self.closeBtn, 21, 4)
+
+
         self.setLayout(self.grid)
 
+    def saveBtnPushed(self):
+        pass
+       # pickle.dump((CornerWindow.corners,))
+
     def closeBtnPushed(self):
-        # getting the values 
+        # getting the values
         for i in range(1, 21):
             exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
             exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
             exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
 
         self.close()
-
 
     def cornerBtnPushed(self):
         if self.cornerOpen is False:
@@ -347,7 +426,6 @@ class CornerWindow(QWidget):
 
 
 if __name__ == '__main__':
-
     app = QApplication(sys.argv)
 
     mwin = MainWindow()
