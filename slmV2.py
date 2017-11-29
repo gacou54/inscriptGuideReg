@@ -240,7 +240,9 @@ class ImgWindow(QWidget):
         else:
 
             #self.example_run_bayesian()
-            self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, variances))
+          #  self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, variances)
+            self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, variances))
+
             self.mainthread.start()
             print("thread passed")
             self.running = True
@@ -256,7 +258,7 @@ class ImgWindow(QWidget):
        # mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
        # variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
         dimension = len(mean)
-        number = 20
+        number = 5
 
         #x1, y1, x2, y2 = 60, 342, 726, 725
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
@@ -291,15 +293,15 @@ class ImgWindow(QWidget):
         # Fitting
 
 
-    def example_run_bayesian(self):
+    def example_run_bayesian(self,box,mean,variances):
         # initialisation
-        mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        #mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         #mean = self.mean
-        variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
+        #variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
         #variances = self.variances
-        x1, y1, x2, y2 = 60, 342, 726, 725
+        #x1, y1, x2, y2 = 60, 342, 726, 725
         #x1, y1, x2, y2 = self.corners
-
+        x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
         dimension = len(mean)
         number = 20
         space = {}
@@ -317,7 +319,9 @@ class ImgWindow(QWidget):
         all_pos = []
         all_score = []
         for x in range(number):
-            loss = extract_score(x, x1, y1, x2, y2, point)
+            while not self.queue.empty():
+                time.sleep(0.2)
+            loss = self.extract_score(x, x1, y1, x2, y2, point)
             bay.update(token, loss)
             (token, point_next) = bay.next()
             point = format_next(point_next)
@@ -329,6 +333,26 @@ class ImgWindow(QWidget):
         np.savetxt("Point_list", all_pos)
 
         return True
+
+    def extract_score(self,number, x1, y1, x2, y2, test_point):
+        '''
+        Measures the score of a given point
+        :param number: number of the point (for filename)
+        :param x1: Int: Coordonnée x du coin supérieur gauche de la boîte à capturer [pixels]
+        :param y1: Int: Coordonnée y du coin supérieur gauche de la boîte à capturer [pixels]
+        :param x2: Int: Coordonnée x du coin inférieur droit de la boîte à capturer [pixels]
+        :param y2: Int: Coordonnée y du coin inférieur droit de la boîte à capturer [pixels]
+        :param test_point: Poids des polynomes de zernick à tester
+        :return:
+        '''
+        self.set_zernike_polynomials(test_point)
+
+        time.sleep(1)  # pour que le slm change de forme
+        capture_box(x1, y1, x2, y2, "image{}".format(number), directory="ScreenCaps")
+        time.sleep(0.2)
+        score = round_score("ScreenCaps/image{}.png".format(number), "image{}contour.png".format(number),
+                            save_calibration=True)
+        return score
 
 
 class ImgSLM(QWidget):
