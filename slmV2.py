@@ -24,6 +24,9 @@ from PyQt5.QtGui import (QPixmap, QImage)
 from PyQt5 import QtGui, QtCore
 from Main import *
 import pickle
+import threading
+import time
+import queue
 LENGHT_LA = 792
 LENGHT_HA = 600
 
@@ -74,6 +77,7 @@ class MainWindow(QMainWindow):
     def show_widgets(self):
         self.img_widget.show()
         self.img_SLM_widget.show()
+
 
 
 class ImgWindow(QWidget):
@@ -158,17 +162,30 @@ class ImgWindow(QWidget):
         self.weigths = []
         for i in self.zernike_list:
             self.weigths.append(1)
-
+        self.running = False
         ##############################################
         self.setLayout(bigGrid)
+        threading.Thread(daemon= True, target  = self.wait_for_signal()).start()
+        self.queue = queue.Queue()
+
+    def wait_for_signal(self):
+        return None
+        while True:
+            time.sleep(5)
+           # QApplication.processEvents()
+            #print("counting")
 
     def stopBtnPushed(self):
         # TODO should pause the program
-        if self._running is False:
-            self._running = True
+        if self.queue.empty():
+            self.queue.put("Sleepy_slm")
+        else:
+            status = self.queue.get()
+       # if self._running is False:
+       #     self._running = True#
 
-        elif self._running is True:
-            self._running = False
+        #elif self._running is True:
+            #self._running = False
 
     def calibBtnPushed(self):
         self.calib = True
@@ -212,28 +229,36 @@ class ImgWindow(QWidget):
 
     @QtCore.pyqtSlot()
     def goBtnPushed(self):
+        box, mean, variances = pickle.load(open("CalibrationFiles/default", "rb"))
         # example_run_bayesian()
-        if not self.calib:
+        if not self.calib or len(box) < 4:
             self.messagelabel.setText("No calibration Data: please calibrate the progam")
             return None
+        elif self.running:
+            self.messagelabel.setText("Program is already running")
+            return None
         else:
+
             #self.example_run_bayesian()
-            self.example_run_hadoc()
+            threading.Thread(daemon=True, target=self.example_run_hadoc(box, mean, variances)).start()
+
+            self.running = True
             #self.set_zernike_polynomials(self.weigths)
 
             # TODO petit test pour changer les poids
-            for i in range(len(self.weigths)):
-                self.weigths[i] += 4
+            #for i in range(len(self.weigths)):
+            #    self.weigths[i] += 4
 
-    def example_run_hadoc(self):
+    def example_run_hadoc(self,box,mean,variances):
         # initialisation
-        mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
+
+       # mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+       # variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
         dimension = len(mean)
         number = 20
 
-        x1, y1, x2, y2 = 60, 342, 726, 725
-        # x1, y1, x2, y2 = set_box_inputs(JustScreenshot=True)
+        #x1, y1, x2, y2 = 60, 342, 726, 725
+        x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
 
         print("generating test data")
         test_points = generate_sequence(mean, variances, dimension, number)
@@ -241,6 +266,8 @@ class ImgWindow(QWidget):
         # Prise de données
         print(test_points.shape)
         for point in range(test_points.shape[0]):
+            while not self.queue.empty():
+                time.sleep(0.5)
             self.set_zernike_polynomials(test_points[point])
 
             time.sleep(1)  # pour que le slm change de forme
@@ -249,9 +276,9 @@ class ImgWindow(QWidget):
             print("\rprogress : {}%".format(100 * point / test_points.shape[0]), end="")
 
         # extraction du score
-        score_list = []
-        for point in range(test_points.shape[1]):
-            score_list.append(round_score("ScreenCaps/image{}.jpg".format(point), "ScreenCaps_contour/image{}contour.jpg".format(point),save_calibration= True))
+     #   score_list = []
+     #   for point in range(test_points.shape[1]):
+     #       score_list.append(round_score("ScreenCaps/image{}.png".format(point), "ScreenCaps_contour/image{}contour.jpg".format(point),save_calibration= True))
 
         print("\rextracting score")
         score_list = []
@@ -370,31 +397,50 @@ class CalibWindow(QWidget):
 
         self.closeBtn = QPushButton('Close')
         self.closeBtn.clicked.connect(self.closeBtnPushed)
-        self.grid.addWidget(self.closeBtn, 20, 4)
-
-        self.saveBtn = QPushButton('Close')
-        self.saveBtn.clicked.connect(self.saveBtnPushed)
         self.grid.addWidget(self.closeBtn, 21, 4)
+
+        self.saveBtn = QPushButton('Save')
+        self.saveBtn.clicked.connect(self.saveBtnPushed)
+        self.grid.addWidget(self.saveBtn, 20, 4)
         # Message système
         self.messagelabel = QLabel(self)
         self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
         self.grid.addWidget(self.messagelabel, 22, 4)
 
         self.setLayout(self.grid)
+
     @QtCore.pyqtSlot(list)
     def update_window_label(self):
         self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
 
     def saveBtnPushed(self):
-        pass
-       # pickle.dump((CornerWindow.corners,))
+        if len(self.cornerWindow.corners) < 4:
+            self.messagelabel.setText("Error : No corners selected")
+            return None
+        self.mean = []
+        self.variances = []
+
+        for i in range(1, 21):
+            exec("self.mean.append(self.pos_{0}.value())".format(i))
+            exec("self.variances.append(abs(self.rangeMin_{0}.value() - self.rangeMax_{0}.value()))".format(i))
+        pickle.dump((self.cornerWindow.corners,self.mean,self.variances),open("CalibrationFiles/default","wb"))
+        print(self.mean)
+        print(self.variances)
+        print(self.cornerWindow.corners)
+
+
 
     def closeBtnPushed(self):
         # getting the values
+        self.mean = []
+        self.variances = []
         for i in range(1, 21):
-            exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
-            exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
-            exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
+            pass
+            #exec("self.mean.append(self.pos_{0})".format(i))
+            #exec("self.variances.append(abs(self.rangeMin_{0}.value() - self.rangeMax_{0}.value()".format(i))
+            #exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
+            #exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
+            #exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
 
         self.close()
 
@@ -441,8 +487,7 @@ class CornerWindow(QWidget):
         self.messagelabel.setText("Corners : {}".format(self.corners))
 
         if len(self.corners) == 4:
-            wat = QtCore.pyqtSignal(self.corners)
-            wat.emit(1)
+            #wat = QtCore.pyqtSignal(self.corners)
             self.close()
 
 
