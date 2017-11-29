@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget,
                              QGridLayout, QHBoxLayout,
                              QSpinBox, QDoubleSpinBox,
                              QTextEdit, QDesktopWidget,
-                             QTabWidget)
+                             QTabWidget, QFileDialog)
 from PyQt5.QtCore import Qt, QByteArray, QPoint
 from PyQt5.QtGui import (QPixmap, QImage)
 from PyQt5 import QtGui, QtCore
@@ -27,6 +27,7 @@ import pickle
 import threading
 import time
 import queue
+
 LENGHT_LA = 792
 LENGHT_HA = 600
 
@@ -181,11 +182,6 @@ class ImgWindow(QWidget):
             self.queue.put("Sleepy_slm")
         else:
             status = self.queue.get()
-       # if self._running is False:
-       #     self._running = True#
-
-        #elif self._running is True:
-            #self._running = False
 
     def calibBtnPushed(self):
         self.calib = True
@@ -229,7 +225,7 @@ class ImgWindow(QWidget):
 
     @QtCore.pyqtSlot()
     def goBtnPushed(self):
-        box, mean, variances = pickle.load(open("CalibrationFiles/default", "rb"))
+        box, mean, maxes, mins = pickle.load(open(self.calibWindow.filename, "rb"))
         # example_run_bayesian()
         if not self.calib or len(box) < 4:
             self.messagelabel.setText("No calibration Data: please calibrate the progam")
@@ -239,9 +235,8 @@ class ImgWindow(QWidget):
             return None
         else:
             number = 5
-            #self.example_run_bayesian()
-          #  self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, variances.number)
-            self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, variances, number))
+            self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, maxes, mins, number))
+            #self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, maxes, mins, number))
 
             self.mainthread.start()
             print("thread passed")
@@ -252,15 +247,12 @@ class ImgWindow(QWidget):
             #for i in range(len(self.weigths)):
             #    self.weigths[i] += 4
 
-    def example_run_hadoc(self,box,mean,variances, number):
-        # initialisation
-
-       # mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-       # variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
+    def example_run_hadoc(self,box,mean,maxes, mins, number):
         dimension = len(mean)
-
-        #x1, y1, x2, y2 = 60, 342, 726, 725
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
+        variances = []
+        for i in range(0, len(maxes)):
+            variances.append(abs(maxes[i] - mins[i]))
 
         print("generating test data")
         test_points = generate_sequence(mean, variances, dimension, number)
@@ -270,42 +262,33 @@ class ImgWindow(QWidget):
         for point in range(test_points.shape[0]):
             while not self.queue.empty():
                 time.sleep(0.5)
+            self.messagelabel.setText("Measurment progress : {}%".format(100 * (point+1) / test_points.shape[0]))
+
             self.set_zernike_polynomials(test_points[point])
 
             time.sleep(1)  # pour que le slm change de forme
             capture_box(x1, y1, x2, y2, "image{}".format(point), directory="ScreenCaps")
             time.sleep(0.2)
-            print("\rprogress : {}%".format(100 * point / test_points.shape[0]), end="")
 
-        # extraction du score
-     #   score_list = []
-     #   for point in range(test_points.shape[1]):
-     #       score_list.append(round_score("ScreenCaps/image{}.png".format(point), "ScreenCaps_contour/image{}contour.jpg".format(point),save_calibration= True))
-
-        print("\rextracting score")
         score_list = []
         for point in range(test_points.shape[0]):
-            print("\rprogress : {}%".format(100 * point / test_points.shape[0]), end="")
+            self.messagelabel.setText("Score extraction progress : {}%".format(100 * point / test_points.shape[0]))
             score_list.append(round_score("ScreenCaps/image{}.png".format(point), "image{}contour.png".format(point),
                                           save_calibration=True))
         np.savetxt("Score_list", score_list)
+        np.savetxt("Point_list", test_points)
+        self.messagelabel.setText("Done : Score saved")
         # Fitting
         self.running = False
 
-    def example_run_bayesian(self,box,mean,variances, number):
+    def example_run_bayesian(self,box,mean, maxes, mins, number):
         # initialisation
-        #mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        #mean = self.mean
-        #variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
-        #variances = self.variances
-        #x1, y1, x2, y2 = 60, 342, 726, 725
-        #x1, y1, x2, y2 = self.corners
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
         dimension = len(mean)
         space = {}
         for x in range(dimension):
             try:
-                space["{}".format(x)] = choco.uniform(mean[x] - variances[x],mean[x] + variances[x])
+                space["{}".format(x)] = choco.uniform(maxes[x],mins[x])
             except:
                 self.messagelabel.setText("Erreur : Un intervalle nul est invalide dans la calibration")
                 self.running = False
@@ -324,16 +307,18 @@ class ImgWindow(QWidget):
         for x in range(number):
             while not self.queue.empty():
                 time.sleep(0.2)
+            self.messagelabel.setText("Progress : {}%".format(100*(x+1)//number))
+
             loss = self.extract_score(x, x1, y1, x2, y2, point)
             bay.update(token, loss)
             (token, point_next) = bay.next()
             point = format_next(point_next)
-            print("\rProgress : {}%".format(100*x//number), end="")
             all_pos.append(point)
             all_score.append(1-loss)
 
         np.savetxt("Score_list", all_score)
         np.savetxt("Point_list", all_pos)
+        self.messagelabel.setText("Done : Score and polynomial weighs saved")
         self.running = False
         return True
 
@@ -418,43 +403,58 @@ class CalibWindow(QWidget):
             exec("self.grid.addWidget(self.rangeMin_{0}, {0}, 2)".format(i))
             exec("self.grid.addWidget(self.rangeMax_{0}, {0}, 3)".format(i))
 
+        self.loadBtn = QPushButton('Load')
+        self.loadBtn.clicked.connect(self.loadBtnPushed)
+        self.grid.addWidget(self.loadBtn, 19, 4)
+
         self.cornerBtn = QPushButton('Capture box')
         self.cornerOpen = False
         self.cornerBtn.clicked.connect(self.cornerBtnPushed)
-        self.grid.addWidget(self.cornerBtn, 19, 4)
+        self.grid.addWidget(self.cornerBtn, 18, 4)
 
         self.closeBtn = QPushButton('Close')
         self.closeBtn.clicked.connect(self.closeBtnPushed)
         self.grid.addWidget(self.closeBtn, 21, 4)
+        self.filename = "default"
 
         self.saveBtn = QPushButton('Save')
         self.saveBtn.clicked.connect(self.saveBtnPushed)
         self.grid.addWidget(self.saveBtn, 20, 4)
         # Message système
         self.messagelabel = QLabel(self)
-        self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
-        self.grid.addWidget(self.messagelabel, 22, 4)
+        self.messagelabel.setText("Currently using default calibration".format(self.cornerWindow.corners))
+        self.grid.addWidget(self.messagelabel, 22, 0,22,4)
 
         self.setLayout(self.grid)
-
-    @QtCore.pyqtSlot(list)
-    def update_window_label(self):
-        self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
+    def loadBtnPushed(self):
+        self.loaddialog = QFileDialog()
+        self.loaddialog.setDirectory("CalibrationFiles")
+        self.filename = self.loaddialog.getOpenFileName()[0]
+        self.messagelabel.setText("Using file : {}".format(self.filename))
 
     def saveBtnPushed(self):
         if len(self.cornerWindow.corners) < 4:
             self.messagelabel.setText("Error : No corners selected")
             return None
         self.mean = []
-        self.variances = []
+        self.maxes = []
+        self.mins = []
 
         for i in range(1, 21):
             exec("self.mean.append(self.pos_{0}.value())".format(i))
-            exec("self.variances.append(abs(self.rangeMin_{0}.value() - self.rangeMax_{0}.value()))".format(i))
-        pickle.dump((self.cornerWindow.corners,self.mean,self.variances),open("CalibrationFiles/default","wb"))
-        print(self.mean)
-        print(self.variances)
-        print(self.cornerWindow.corners)
+            exec("self.maxes.append(self.rangeMax_{0}.value())".format(i))
+            exec("self.mins.append(self.rangeMin_{0}.value())".format(i))
+
+
+        self.savedialog = QFileDialog()
+        self.savedialog.setDirectory("CalibrationFiles")
+        filename = self.savedialog.getSaveFileName()[0]
+
+
+        pickle.dump((self.cornerWindow.corners,self.mean,self.maxes, self.mins),open(filename,"wb"))
+        self.messagelabel.setText("Using file : {}".format(filename))
+        self.filename = filename
+
 
 
 
@@ -464,8 +464,6 @@ class CalibWindow(QWidget):
         self.variances = []
         for i in range(1, 21):
             pass
-            #exec("self.mean.append(self.pos_{0})".format(i))
-            #exec("self.variances.append(abs(self.rangeMin_{0}.value() - self.rangeMax_{0}.value()".format(i))
             #exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
             #exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
             #exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
@@ -515,7 +513,6 @@ class CornerWindow(QWidget):
         self.messagelabel.setText("Corners : {}".format(self.corners))
 
         if len(self.corners) == 4:
-            #wat = QtCore.pyqtSignal(self.corners)
             self.close()
 
 
