@@ -472,6 +472,8 @@ class CalibWindow(QWidget):
         if self.cornerOpen is False:
             self.cornerOpen = True
             self.cornerWindow.show()
+            calibrate_screenshot(0, 0, 0, 0, "ScreenCaps/1Calibration")
+
         elif self.cornerOpen is True:
             self.cornerOpen = False
             self.cornerWindow.close()
@@ -482,7 +484,6 @@ class CornerWindow(QWidget):
         super().__init__()
         self.grid = QGridLayout()
 
-        calibrate_screenshot(0, 0, 0, 0, "ScreenCaps/1Calibration")
 
         self.label = QLabel()
         self.label.setPixmap(QPixmap("ScreenCaps/1Calibration.png"))
