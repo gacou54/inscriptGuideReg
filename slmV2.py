@@ -240,7 +240,8 @@ class ImgWindow(QWidget):
         else:
 
             #self.example_run_bayesian()
-            threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, variances)).start()
+            self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, variances))
+            self.mainthread.start()
             print("thread passed")
             self.running = True
             #self.set_zernike_polynomials(self.weigths)
