@@ -441,7 +441,8 @@ class CornerWindow(QWidget):
         self.messagelabel.setText("Corners : {}".format(self.corners))
 
         if len(self.corners) == 4:
-
+            wat = QtCore.pyqtSignal(self.corners)
+            wat.emit(1)
             self.close()
 
 
