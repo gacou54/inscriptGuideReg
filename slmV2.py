@@ -166,22 +166,15 @@ class ImgWindow(QWidget):
         self.running = False
         ##############################################
         self.setLayout(bigGrid)
-        #threading.Thread(daemon= True, target  = self.wait_for_signal()).start()
         self.queue = queue.Queue()
 
-    def wait_for_signal(self):
-        return None
-        while True:
-            time.sleep(5)
-           # QApplication.processEvents()
-            #print("counting")
-
     def stopBtnPushed(self):
-        # TODO should pause the program
         if self.queue.empty():
             self.queue.put("Sleepy_slm")
+            self.messagelabel.setText("Measurement paused")
         else:
             status = self.queue.get()
+            self.messagelabel.setText("Measurement resumed")
 
     def calibBtnPushed(self):
         self.calib = True
@@ -278,7 +271,6 @@ class ImgWindow(QWidget):
         np.savetxt("Score_list", score_list)
         np.savetxt("Point_list", test_points)
         self.messagelabel.setText("Done : Score saved")
-        # Fitting
         self.running = False
 
     def example_run_bayesian(self,box,mean, maxes, mins, number):
