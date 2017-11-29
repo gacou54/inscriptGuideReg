@@ -165,7 +165,7 @@ class ImgWindow(QWidget):
         self.running = False
         ##############################################
         self.setLayout(bigGrid)
-        threading.Thread(daemon= True, target  = self.wait_for_signal()).start()
+        #threading.Thread(daemon= True, target  = self.wait_for_signal()).start()
         self.queue = queue.Queue()
 
     def wait_for_signal(self):
@@ -240,8 +240,8 @@ class ImgWindow(QWidget):
         else:
 
             #self.example_run_bayesian()
-            threading.Thread(daemon=True, target=self.example_run_hadoc(box, mean, variances)).start()
-
+            threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, variances)).start()
+            print("thread passed")
             self.running = True
             #self.set_zernike_polynomials(self.weigths)
 
