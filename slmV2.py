@@ -44,10 +44,25 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(exitAction)
+
+
+
+
         ##############################################
 
         # main window
         self.img_widget = ImgWindow()
+        ###
+        bayesianAction = QAction('&Bayesian', self)
+        adhocAction = QAction('&ad hoc', self)
+
+        bayesianAction.triggered.connect(lambda : self.img_widget.set_type(1))
+        adhocAction.triggered.connect(lambda : self.img_widget.set_type(2))
+
+        typeMenu = menubar.addMenu('&Type')
+        typeMenu.addAction(bayesianAction)
+        typeMenu.addAction(adhocAction)
+        ###
         # second screen window
         self.img_SLM_widget = ImgSLM()
         self.img_SLM_widget.setAutoFillBackground(True)
@@ -167,6 +182,11 @@ class ImgWindow(QWidget):
         ##############################################
         self.setLayout(bigGrid)
         self.queue = queue.Queue()
+        self.type = 1
+
+    def set_type(self, type):
+        self.type = type
+
 
     def stopBtnPushed(self):
         if self.queue.empty():
@@ -228,8 +248,11 @@ class ImgWindow(QWidget):
             return None
         else:
             number = 5
-            self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, maxes, mins, number))
-            #self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, maxes, mins, number))
+            if self.type == 2:
+                self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, maxes, mins, number))
+
+            if self.type == 1:
+                self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, maxes, mins, number))
 
             self.mainthread.start()
             print("thread passed")
@@ -407,7 +430,7 @@ class CalibWindow(QWidget):
         self.closeBtn = QPushButton('Close')
         self.closeBtn.clicked.connect(self.closeBtnPushed)
         self.grid.addWidget(self.closeBtn, 21, 4)
-        self.filename = "default"
+        self.filename = "CalibrationFiles/default"
 
         self.saveBtn = QPushButton('Save')
         self.saveBtn.clicked.connect(self.saveBtnPushed)
@@ -469,7 +492,7 @@ class CalibWindow(QWidget):
         elif self.cornerOpen is True:
             self.cornerOpen = False
             self.cornerWindow.close()
-        self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
+        #self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
 
 
 class CornerWindow(QWidget):
