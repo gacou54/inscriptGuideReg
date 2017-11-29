@@ -45,9 +45,6 @@ class MainWindow(QMainWindow):
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(exitAction)
 
-
-
-
         ##############################################
 
         # main window
@@ -93,7 +90,6 @@ class MainWindow(QMainWindow):
     def show_widgets(self):
         self.img_widget.show()
         self.img_SLM_widget.show()
-
 
 
 class ImgWindow(QWidget):
@@ -239,7 +235,6 @@ class ImgWindow(QWidget):
     @QtCore.pyqtSlot()
     def goBtnPushed(self):
         box, mean, maxes, mins = pickle.load(open(self.calibWindow.filename, "rb"))
-        # example_run_bayesian()
         if not self.calib or len(box) < 4:
             self.messagelabel.setText("No calibration Data: please calibrate the progam")
             return None
@@ -247,6 +242,7 @@ class ImgWindow(QWidget):
             self.messagelabel.setText("Program is already running")
             return None
         else:
+            #TODO Mettre la sélection de du nombre d'échantillons dans le programme lui-même
             number = 5
             if self.type == 2:
                 self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, maxes, mins, number))
@@ -255,13 +251,7 @@ class ImgWindow(QWidget):
                 self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, maxes, mins, number))
 
             self.mainthread.start()
-            print("thread passed")
             self.running = True
-            #self.set_zernike_polynomials(self.weigths)
-
-            # TODO petit test pour changer les poids
-            #for i in range(len(self.weigths)):
-            #    self.weigths[i] += 4
 
     def example_run_hadoc(self,box,mean,maxes, mins, number):
         dimension = len(mean)
@@ -470,15 +460,8 @@ class CalibWindow(QWidget):
         self.messagelabel.setText("Using file : {}".format(filename))
         self.filename = filename
 
-
-
-
     def closeBtnPushed(self):
-        # getting the values
-        self.mean = []
-        self.variances = []
-        for i in range(1, 21):
-            pass
+
             #exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
             #exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
             #exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
@@ -492,7 +475,6 @@ class CalibWindow(QWidget):
         elif self.cornerOpen is True:
             self.cornerOpen = False
             self.cornerWindow.close()
-        #self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
 
 
 class CornerWindow(QWidget):
