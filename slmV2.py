@@ -238,10 +238,10 @@ class ImgWindow(QWidget):
             self.messagelabel.setText("Program is already running")
             return None
         else:
-
+            number = 5
             #self.example_run_bayesian()
-          #  self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, variances)
-            self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, variances))
+          #  self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, variances.number)
+            self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, variances, number))
 
             self.mainthread.start()
             print("thread passed")
@@ -252,13 +252,12 @@ class ImgWindow(QWidget):
             #for i in range(len(self.weigths)):
             #    self.weigths[i] += 4
 
-    def example_run_hadoc(self,box,mean,variances):
+    def example_run_hadoc(self,box,mean,variances, number):
         # initialisation
 
        # mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
        # variances = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5]
         dimension = len(mean)
-        number = 5
 
         #x1, y1, x2, y2 = 60, 342, 726, 725
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
@@ -291,9 +290,9 @@ class ImgWindow(QWidget):
                                           save_calibration=True))
         np.savetxt("Score_list", score_list)
         # Fitting
+        self.running = False
 
-
-    def example_run_bayesian(self,box,mean,variances):
+    def example_run_bayesian(self,box,mean,variances, number):
         # initialisation
         #mean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         #mean = self.mean
@@ -303,10 +302,14 @@ class ImgWindow(QWidget):
         #x1, y1, x2, y2 = self.corners
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
         dimension = len(mean)
-        number = 20
         space = {}
         for x in range(dimension):
-            space["{}".format(x)] = choco.uniform(mean[x] - variances[x],mean[x] + variances[x])
+            try:
+                space["{}".format(x)] = choco.uniform(mean[x] - variances[x],mean[x] + variances[x])
+            except:
+                self.messagelabel.setText("Erreur : Un intervalle nul est invalide dans la calibration")
+                self.running = False
+                return None
 
         # pip install sclite3
         # sclite3 TEST.db
@@ -331,7 +334,7 @@ class ImgWindow(QWidget):
 
         np.savetxt("Score_list", all_score)
         np.savetxt("Point_list", all_pos)
-
+        self.running = False
         return True
 
     def extract_score(self,number, x1, y1, x2, y2, test_point):
