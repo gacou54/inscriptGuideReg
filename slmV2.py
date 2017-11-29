@@ -128,7 +128,7 @@ class ImgWindow(QWidget):
         self.stopBtn.clicked.connect(self.stopBtnPushed)
 
         # calib
-        self.calib = False
+        self.calib = True
         self.corners = False
         self.variances = False
         self.mean = False
@@ -207,6 +207,7 @@ class ImgWindow(QWidget):
 
         self.label.setPixmap(QPixmap.fromImage(self.img))
         self.procStart.emit(self.img)
+        QApplication.processEvents()
         print('Done')
 
     @QtCore.pyqtSlot()
@@ -216,7 +217,8 @@ class ImgWindow(QWidget):
             self.messagelabel.setText("No calibration Data: please calibrate the progam")
             return None
         else:
-            self.example_run_bayesian()
+            #self.example_run_bayesian()
+            self.example_run_hadoc()
             #self.set_zernike_polynomials(self.weigths)
 
             # TODO petit test pour changer les poids
@@ -239,7 +241,7 @@ class ImgWindow(QWidget):
         # Prise de données
         print(test_points.shape)
         for point in range(test_points.shape[0]):
-            self.set_zernike_polynomial(test_points[point])
+            self.set_zernike_polynomials(test_points[point])
 
             time.sleep(1)  # pour que le slm change de forme
             capture_box(x1, y1, x2, y2, "image{}".format(point), directory="ScreenCaps")
@@ -373,9 +375,15 @@ class CalibWindow(QWidget):
         self.saveBtn = QPushButton('Close')
         self.saveBtn.clicked.connect(self.saveBtnPushed)
         self.grid.addWidget(self.closeBtn, 21, 4)
-
+        # Message système
+        self.messagelabel = QLabel(self)
+        self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
+        self.grid.addWidget(self.messagelabel, 22, 4)
 
         self.setLayout(self.grid)
+    @QtCore.pyqtSlot(list)
+    def update_window_label(self):
+        self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
 
     def saveBtnPushed(self):
         pass
@@ -397,6 +405,7 @@ class CalibWindow(QWidget):
         elif self.cornerOpen is True:
             self.cornerOpen = False
             self.cornerWindow.close()
+        self.messagelabel.setText("Corners : {}".format(self.cornerWindow.corners))
 
 
 class CornerWindow(QWidget):
@@ -414,15 +423,27 @@ class CornerWindow(QWidget):
 
         self.grid.addWidget(self.label)
         self.setLayout(self.grid)
+        self.resize(500,500)
+
+        # Message système
+        self.messagelabel = QLabel(self)
+        self.messagelabel.setText("Corners : Select top left then bottom right")
+        self.grid.addWidget(self.messagelabel, *(2, 0))
+
+        self.corners = []
 
     def getPos(self, event):
-        if len(self.corners) == 4:
-            self.corners = []
+
         x = event.pos().x()
         y = event.pos().y()
         self.corners.append(x)
         self.corners.append(y)
-        print(self.corners)
+        self.messagelabel.setText("Corners : {}".format(self.corners))
+
+        if len(self.corners) == 4:
+
+            self.close()
+
 
 
 if __name__ == '__main__':
