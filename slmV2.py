@@ -212,9 +212,26 @@ class ImgWindow(QWidget):
         self.calib = True
         self.calibWindow.show()
 
+        self.calibThread = threading.Thread(target= self.calibrate_zernike, daemon= True)
+        self.calibThread.start()
     @QtCore.pyqtSlot()
     def img_SLM_procDone(self):
         self.raise_()
+
+    def calibrate_zernike(self):
+        meanCalib = 0
+        previousMean = 1
+        while self.calibWindow.calibQueue.empty():
+            time.sleep(0.2)
+            try:
+                meanCalib = self.calibWindow.extract_mean()
+                if meanCalib != previousMean:
+                    self.set_zernike_polynomials(meanCalib)
+            except:
+                pass
+            previousMean = meanCalib
+
+
 
     def set_zernike_polynomials(self, weigths):
         """
@@ -455,12 +472,19 @@ class CalibWindow(QWidget):
         self.saveBtn = QPushButton('Save')
         self.saveBtn.clicked.connect(self.saveBtnPushed)
         self.grid.addWidget(self.saveBtn, 20, 4)
+
+
         # Message système
         self.messagelabel = QLabel(self)
         self.messagelabel.setText("Currently using default calibration".format(self.cornerWindow.corners))
         self.grid.addWidget(self.messagelabel, 22, 0,22,4)
 
         self.setLayout(self.grid)
+
+        self.calibQueue  = queue.Queue()
+
+
+
     def loadBtnPushed(self):
         self.loaddialog = QFileDialog()
         self.loaddialog.setDirectory("CalibrationFiles")
@@ -490,12 +514,18 @@ class CalibWindow(QWidget):
         self.messagelabel.setText("Using file : {}".format(filename))
         self.filename = filename
 
+    def extract_mean(self):
+        mean = []
+        for i in range(1, 21):
+            exec("mean.append(self.pos_{0}.value())".format(i))
+        return mean
+
     def closeBtnPushed(self):
 
             #exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
             #exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
             #exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
-
+        self.calibQueue.put("end zernike update")
         self.close()
 
     def cornerBtnPushed(self):
