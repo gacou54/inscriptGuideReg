@@ -133,15 +133,15 @@ class ImgWindow(QWidget):
         self.calibBtn.setFixedSize(220, 60)
         bigGrid.addWidget(self.calibBtn, *(8, 1))
 
-        self.stopBtn = QPushButton("Pause")
-        self.stopBtn.setFixedSize(220, 60)
-        bigGrid.addWidget(self.stopBtn, *(8, 2))
+        self.pauseBtn = QPushButton("Pause")
+        self.pauseBtn.setFixedSize(220, 60)
+        bigGrid.addWidget(self.pauseBtn, *(8, 2))
 
         bigGrid.setHorizontalSpacing(50)
 
         self.goBtn.clicked.connect(self.goBtnPushed)
         self.calibBtn.clicked.connect(self.calibBtnPushed)
-        self.stopBtn.clicked.connect(self.stopBtnPushed)
+        self.pauseBtn.clicked.connect(self.pauseBtnPushed)
 
         # calib
         self.calib = True
@@ -189,13 +189,24 @@ class ImgWindow(QWidget):
         self.type = type
 
 
-    def stopBtnPushed(self):
+    def pauseBtnPushed(self):
         if self.queue.empty():
             self.queue.put("Sleepy_slm")
-            self.messagelabel.setText("Measurement paused")
+            self.messagelabel.setText("Pausing measurement...")
+            self.goBtn.setText("Stop")
+            self.goBtn.clicked.connect(self.stopExecution)
         else:
             status = self.queue.get()
             self.messagelabel.setText("Measurement resumed")
+            self.goBtn.setText("Go")
+            self.goBtn.clicked.connect(self.goBtnPushed)
+
+    def stopExecution(self):
+        self.messagelabel.setText("Stopping measurements...")
+        self.queue.put("Stopping threads")
+        self.goBtn.setText("Go")
+        self.goBtn.clicked.connect(self.goBtnPushed)
+
 
     def calibBtnPushed(self):
         self.calib = True
@@ -221,8 +232,7 @@ class ImgWindow(QWidget):
         for i in range(len(self.zernike_list)):
             array += (weigths[i] * self.zernike_list[i]).astype(np.uint8)
 
-        array = (array.astype(np.uint8) + self.corrArrayAndCorrValue[0].astype(np.uint8)) * self.corrArrayAndCorrValue[
-            1]
+        array = (array.astype(np.uint8) + self.corrArrayAndCorrValue[0].astype(np.uint8)) * self.corrArrayAndCorrValue[1]
 
         for i in range(600):
             for j in range(792):
@@ -259,6 +269,7 @@ class ImgWindow(QWidget):
             self.running = True
 
     def example_run_hadoc(self,box,mean,maxes, mins, number):
+        measuring = True
         dimension = len(mean)
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
         variances = []
@@ -271,15 +282,23 @@ class ImgWindow(QWidget):
         # Prise de données
         print(test_points.shape)
         for point in range(test_points.shape[0]):
+            #implémentation de pause
             while not self.queue.empty():
                 time.sleep(0.5)
-            self.messagelabel.setText("Measurment progress : {}%".format(100 * (point+1) / test_points.shape[0]))
+                #implémentation de stop
+                if self.queue.qsize() > 1:
+                    measuring = False
+                    break
+                self.messagelabel.setText("Measurements paused")
 
-            self.set_zernike_polynomials(test_points[point])
+            if measuring:
+                self.messagelabel.setText("Measurment progress : {}%".format(100 * (point+1) / test_points.shape[0]))
 
-            time.sleep(1)  # pour que le slm change de forme
-            capture_box(x1, y1, x2, y2, "image{}".format(point), directory="ScreenCaps")
-            time.sleep(0.2)
+                self.set_zernike_polynomials(test_points[point])
+
+                time.sleep(1)  # pour que le slm change de forme
+                capture_box(x1, y1, x2, y2, "image{}".format(point), directory="ScreenCaps")
+                time.sleep(0.2)
 
         score_list = []
         for point in range(test_points.shape[0]):
@@ -293,6 +312,7 @@ class ImgWindow(QWidget):
 
     def example_run_bayesian(self,box,mean, maxes, mins, number):
         # initialisation
+        measuring = True
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
         dimension = len(mean)
         space = {}
@@ -316,15 +336,21 @@ class ImgWindow(QWidget):
         all_score = []
         for x in range(number):
             while not self.queue.empty():
-                time.sleep(0.2)
-            self.messagelabel.setText("Progress : {}%".format(100*(x+1)//number))
+                time.sleep(0.5)
+                if self.queue.qsize() > 1:
+                    measuring = False
+                    break
+                self.messagelabel.setText("Measurements paused")
 
-            loss = self.extract_score(x, x1, y1, x2, y2, point)
-            bay.update(token, loss)
-            (token, point_next) = bay.next()
-            point = format_next(point_next)
-            all_pos.append(point)
-            all_score.append(1-loss)
+            if measuring :
+                self.messagelabel.setText("Progress : {}%".format(100*(x+1)//number))
+
+                loss = self.extract_score(x, x1, y1, x2, y2, point)
+                bay.update(token, loss)
+                (token, point_next) = bay.next()
+                point = format_next(point_next)
+                all_pos.append(point)
+                all_score.append(1-loss)
 
         np.savetxt("Score_list", all_score)
         np.savetxt("Point_list", all_pos)
@@ -348,8 +374,7 @@ class ImgWindow(QWidget):
         time.sleep(1)  # pour que le slm change de forme
         capture_box(x1, y1, x2, y2, "image{}".format(number), directory="ScreenCaps")
         time.sleep(0.2)
-        score = round_score("ScreenCaps/image{}.png".format(number), "image{}contour.png".format(number),
-                            save_calibration=True)
+        score = round_score("ScreenCaps/image{}.png".format(number), "image{}contour.png".format(number), save_calibration=True)
         return score
 
 
