@@ -150,26 +150,31 @@ class ImgWindow(QWidget):
         self.mean = False
 
         # zernike polynomials
-        n_max_zernike_poly = 4
-        self.zernike_list = []
+        try:
+            print("loading Zernike polynomials")
+            self.zernike_list = list(np.load("Zernike/poly.npy"))
+        except:
+            print("Not found, creation of the Zernike polynomials")        
+            n_max_zernike_poly = 4
+            self.zernike_list = []
 
-        idx = []
-        for n in range(n_max_zernike_poly):
-            for m in range(-n, n + 1):
-                if n % 2 == 0 and m % 2 == 0:
-                    idx.append([n, m])
+            idx = []
+            for n in range(n_max_zernike_poly):
+                for m in range(-n, n + 1):
+                    if n % 2 == 0 and m % 2 == 0:
+                        idx.append([n, m])
 
-                elif m == 0:
-                    pass
+                    elif m == 0:
+                        pass
 
-                elif n % 2 == 1 and m % 2 == 1:
-                    idx.append([n, m])
+                    elif n % 2 == 1 and m % 2 == 1:
+                        idx.append([n, m])
 
-        print('Creation of the Zernike polynomials')
-        for i in idx:
-            self.zernike_list.append(clp.czernike(i[0], i[1]))
+            for i in idx:
+                self.zernike_list.append(clp.czernike(i[0], i[1]))
 
-        print('Done')
+            print('Saving...')
+            np.save("Zernike/poly.npy", np.array(self.zernike_list))
 
         self.weigths = []
         for i in self.zernike_list:
