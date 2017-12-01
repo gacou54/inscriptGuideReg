@@ -30,6 +30,7 @@ import queue
 
 LENGHT_LA = 792
 LENGHT_HA = 600
+N_MAX_ZERNIKE_POLY = 6
 
 
 class MainWindow(QMainWindow):
@@ -53,8 +54,8 @@ class MainWindow(QMainWindow):
         bayesianAction = QAction('&Bayesian', self)
         adhocAction = QAction('&ad hoc', self)
 
-        bayesianAction.triggered.connect(lambda : self.img_widget.set_type(1))
-        adhocAction.triggered.connect(lambda : self.img_widget.set_type(2))
+        bayesianAction.triggered.connect(lambda: self.img_widget.set_type(1))
+        adhocAction.triggered.connect(lambda: self.img_widget.set_type(2))
 
         typeMenu = menubar.addMenu('&Type')
         typeMenu.addAction(bayesianAction)
@@ -156,12 +157,11 @@ class ImgWindow(QWidget):
             print("loading Zernike polynomials")
             self.zernike_list = list(np.load("Zernike/poly.npy"))
         except:
-            print("Not found, creation of the Zernike polynomials")        
-            n_max_zernike_poly = 4
+            print("Not found, creation of the Zernike polynomials")
             self.zernike_list = []
 
             idx = []
-            for n in range(n_max_zernike_poly):
+            for n in range(N_MAX_ZERNIKE_POLY):
                 for m in range(-n, n + 1):
                     if n % 2 == 0 and m % 2 == 0:
                         idx.append([n, m])
@@ -190,7 +190,6 @@ class ImgWindow(QWidget):
     def set_type(self, type):
         self.type = type
 
-
     def pauseBtnPushed(self):
         if self.queue.empty():
             self.queue.put("Sleepy_slm")
@@ -214,7 +213,7 @@ class ImgWindow(QWidget):
         self.calib = True
         self.calibWindow.show()
 
-        self.calibThread = threading.Thread(target= self.calibrate_zernike, daemon= True)
+        self.calibThread = threading.Thread(target=self.calibrate_zernike, daemon=True)
         self.calibThread.start()
     @QtCore.pyqtSlot()
     def img_SLM_procDone(self):
@@ -282,15 +281,15 @@ class ImgWindow(QWidget):
             #TODO Mettre la sélection de du nombre d'échantillons dans le programme lui-même
             number = 5
             if self.type == 2:
-                self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_hadoc(box, mean, maxes, mins, number))
+                self.mainthread = threading.Thread(daemon=True, target=lambda: self.example_run_hadoc(box, mean, maxes, mins, number))
 
             if self.type == 1:
-                self.mainthread = threading.Thread(daemon=True, target=lambda : self.example_run_bayesian(box, mean, maxes, mins, number))
+                self.mainthread = threading.Thread(daemon=True, target=lambda: self.example_run_bayesian(box, mean, maxes, mins, number))
 
             self.mainthread.start()
             self.running = True
 
-    def example_run_hadoc(self,box,mean,maxes, mins, number):
+    def example_run_hadoc(self, box, mean, maxes, mins, number):
         measuring = True
         dimension = len(mean)
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
@@ -335,7 +334,7 @@ class ImgWindow(QWidget):
         self.messagelabel.setText("Done : Score saved")
         self.running = False
 
-    def example_run_bayesian(self,box,mean, maxes, mins, number):
+    def example_run_bayesian(self, box, mean, maxes, mins, number):
         # initialisation
         measuring = True
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
@@ -343,7 +342,7 @@ class ImgWindow(QWidget):
         space = {}
         for x in range(dimension):
             try:
-                space["{}".format(x)] = choco.uniform(maxes[x],mins[x])
+                space["{}".format(x)] = choco.uniform(maxes[x], mins[x])
             except:
                 self.messagelabel.setText("Erreur : Un intervalle nul est invalide dans la calibration")
                 self.running = False
@@ -388,7 +387,7 @@ class ImgWindow(QWidget):
         self.running = False
         return True
 
-    def extract_score(self,number, x1, y1, x2, y2, test_point):
+    def extract_score(self, number, x1, y1, x2, y2, test_point):
         '''
         Measures the score of a given point
         :param number: number of the point (for filename)
@@ -443,16 +442,28 @@ class CalibWindow(QWidget):
 
         self.grid = QGridLayout()
 
+        idx = []
+        for n in range(N_MAX_ZERNIKE_POLY):
+            for m in range(-n, n + 1):
+                if n % 2 == 0 and m % 2 == 0:
+                    idx.append([n, m])
+
+                elif m == 0:
+                    pass
+
+                elif n % 2 == 1 and m % 2 == 1:
+                    idx.append([n, m])
+
         # number
-        for i in range(1, 21):
-            exec("self.no_{0} = QLabel('{0}.')".format(i))
+        for i in range(1, len(idx)+1):
+            exec("self.no_{0} = QLabel(r'{0}.  Z_{1}^{2}')".format(i, idx[i-1][0], idx[i-1][1]))
             exec("self.grid.addWidget(self.no_{0}, {0}, 0)".format(i))
 
         # starting position
         self.labelPosi = QLabel('Starting position')
         self.grid.addWidget(self.labelPosi, 0, 1)
 
-        for i in range(1, 21):
+        for i in range(1, len(idx)+1):
             exec("self.pos_{0} = QDoubleSpinBox()".format(i))
             exec("self.grid.addWidget(self.pos_{0}, {0}, 1)".format(i))
 
@@ -462,7 +473,7 @@ class CalibWindow(QWidget):
         self.grid.addWidget(self.labelMin, 0, 2)
         self.grid.addWidget(self.labelMax, 0, 3)
 
-        for i in range(1, 21):
+        for i in range(1, len(idx)+1):
             exec("self.rangeMin_{0} = QDoubleSpinBox()".format(i))
             exec("self.rangeMax_{0} = QDoubleSpinBox()".format(i))
             exec("self.grid.addWidget(self.rangeMin_{0}, {0}, 2)".format(i))
@@ -480,7 +491,6 @@ class CalibWindow(QWidget):
         self.closeBtn = QPushButton('Close')
         self.closeBtn.clicked.connect(self.closeBtnPushed)
         self.grid.addWidget(self.closeBtn, 21, 4)
-
         self.filename = "CalibrationFiles/default"
 
         self.saveBtn = QPushButton('Save')
@@ -491,11 +501,11 @@ class CalibWindow(QWidget):
         # Message système
         self.messagelabel = QLabel(self)
         self.messagelabel.setText("Currently using default calibration".format(self.cornerWindow.corners))
-        self.grid.addWidget(self.messagelabel, 22, 0,22,4)
+        self.grid.addWidget(self.messagelabel, 22, 0, 22, 4)
 
         self.setLayout(self.grid)
 
-        self.calibQueue  = queue.Queue()
+        self.calibQueue = queue.Queue()
 
 
 
@@ -523,8 +533,7 @@ class CalibWindow(QWidget):
         self.savedialog.setDirectory("CalibrationFiles")
         filename = self.savedialog.getSaveFileName()[0]
 
-
-        pickle.dump((self.cornerWindow.corners,self.mean,self.maxes, self.mins),open(filename,"wb"))
+        pickle.dump((self.cornerWindow.corners, self.mean, self.maxes, self.mins), open(filename, "wb"))
         self.messagelabel.setText("Using file : {}".format(filename))
         self.filename = filename
 
@@ -535,10 +544,9 @@ class CalibWindow(QWidget):
         return mean
 
     def closeBtnPushed(self):
-
-            #exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
-            #exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
-            #exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
+            # exec("self.pos_{0}_value = self.pos_{0}.value()".format(i))
+            # exec("self.rangeMin_{0}_value = self.rangeMin_{0}.value()".format(i))
+            # exec("self.rangeMax_{0}_value = self.rangeMax_{0}.value()".format(i))
         self.calibQueue.put("end zernike update")
         self.close()
 
@@ -567,7 +575,7 @@ class CornerWindow(QWidget):
 
         self.grid.addWidget(self.label)
         self.setLayout(self.grid)
-        self.resize(500,500)
+        self.resize(500, 500)
 
         # Message système
         self.messagelabel = QLabel(self)
