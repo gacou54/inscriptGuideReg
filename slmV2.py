@@ -342,13 +342,20 @@ class ImgWindow(QWidget):
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
         dimension = len(mean)
         space = {}
+        print(mins)
+        print(maxes)
+        if maxes[0] < mins[0]:
+            tempmin = mins
+            tempmaxes = maxes
+            mins = tempmaxes.copy()
+            maxes = tempmin.copy()
         for x in range(dimension):
-            try:
-                space["{}".format(x)] = choco.uniform(maxes[x], mins[x])
-            except:
-                self.messagelabel.setText("Erreur : Un intervalle nul est invalide dans la calibration")
-                self.running = False
-                return None
+            #try:
+                space["{}".format(x)] = choco.uniform(mins[x], maxes[x])
+           # except:
+            #    self.messagelabel.setText("Erreur : Un intervalle nul est invalide dans la calibration")
+             #   self.running = False
+              ##  return None
 
         # pip install sclite3
         # sclite3 TEST.db
@@ -363,8 +370,8 @@ class ImgWindow(QWidget):
         for x in range(number):
             while not self.queue.empty():
                 if measuring:
-
                     time.sleep(0.5)
+                    self.messagelabel.setText("Measurements paused")
                     if not self.queueStop.empty():
                         self.queueStop.get()
                         measuring = False
@@ -372,7 +379,6 @@ class ImgWindow(QWidget):
 
             if measuring:
 
-                self.messagelabel.setText("Measurements paused")
 
                 self.messagelabel.setText("Progress : {}%".format(100*(x+1)//number))
 
