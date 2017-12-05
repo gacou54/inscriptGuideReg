@@ -28,6 +28,7 @@ import threading
 import time
 import queue
 
+
 LENGHT_LA = 792
 LENGHT_HA = 600
 N_MAX_ZERNIKE_POLY = 6
@@ -376,14 +377,14 @@ class ImgWindow(QWidget):
 
     def extract_score(self, number, x1, y1, x2, y2, test_point):
         '''
-        Measures the score of a given point
-        :param number: number of the point (for filename)
-        :param x1: Int: Coordonnée x du coin supérieur gauche de la boîte à capturer [pixels]
-        :param y1: Int: Coordonnée y du coin supérieur gauche de la boîte à capturer [pixels]
-        :param x2: Int: Coordonnée x du coin inférieur droit de la boîte à capturer [pixels]
-        :param y2: Int: Coordonnée y du coin inférieur droit de la boîte à capturer [pixels]
-        :param test_point: Poids des polynomes de zernick à tester
-        :return:
+            Measures the score of a given point
+            :param number: number of the point (for filename)
+            :param x1: Int: Coordonnée x du coin supérieur gauche de la boîte à capturer [pixels]
+            :param y1: Int: Coordonnée y du coin supérieur gauche de la boîte à capturer [pixels]
+            :param x2: Int: Coordonnée x du coin inférieur droit de la boîte à capturer [pixels]
+            :param y2: Int: Coordonnée y du coin inférieur droit de la boîte à capturer [pixels]
+            :param test_point: Poids des polynomes de zernick à tester
+            :return:
         '''
         self.set_zernike_polynomials(test_point)
 
@@ -441,7 +442,7 @@ class CalibWindow(QWidget):
                 elif n % 2 == 1 and m % 2 == 1:
                     idx.append([n, m])
 
-        # number
+        # label for the Zernike polynomials
         for i in range(1, len(idx)+1):
             exec("self.no_{0} = QLabel(r'{0}.  Z_{1}^{2}')".format(i, idx[i-1][0], idx[i-1][1]))
             exec("self.grid.addWidget(self.no_{0}, {0}, 0)".format(i))
@@ -484,7 +485,7 @@ class CalibWindow(QWidget):
         self.saveBtn.clicked.connect(self.saveBtnPushed)
         self.grid.addWidget(self.saveBtn, 20, 4)
 
-        # Message système
+        # system message
         self.messagelabel = QLabel(self)
         self.messagelabel.setText("Currently using default calibration".format(self.cornerWindow.corners))
         self.grid.addWidget(self.messagelabel, 22, 0, 22, 4)
