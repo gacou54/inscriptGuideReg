@@ -516,6 +516,14 @@ class CalibWindow(QWidget):
         self.loaddialog.setDirectory("CalibrationFiles")
         self.filename = self.loaddialog.getOpenFileName()[0]
         self.messagelabel.setText("Using file : {}".format(self.filename))
+        box, mean, maxes, mins = pickle.load(open(self.filename, "rb"))
+        for i in range(len(self.idx)):
+            exec("self.pos_{0}.setValue({1})".format(i, mean[i]))
+            exec("self.rangeMax_{0}.setValue({1})".format(i, maxes[i]))
+            exec("self.rangeMin_{0}.setValue({1})".format(i, mins[i]))
+
+
+
 
     def saveBtnPushed(self):
         if len(self.cornerWindow.corners) < 4:
