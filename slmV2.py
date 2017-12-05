@@ -465,7 +465,7 @@ class CalibWindow(QWidget):
         self.idx = idx
         # label for the Zernike polynomials
         for i in range(len(idx)):
-            exec("self.no_{0} = QLabel(r'{0}.  Z_{1}^{2}')".format(i, idx[i-1][0], idx[i-1][1]))
+            exec("self.no_{0} = QLabel(r'{0}.  Z_{1}^{2}')".format(i, idx[i][0], idx[i][1]))
             exec("self.grid.addWidget(self.no_{0}, {0}, 0)".format(i))
 
         # starting position
@@ -569,8 +569,9 @@ class CalibWindow(QWidget):
     def cornerBtnPushed(self):
         if self.cornerOpen is False:
             self.cornerOpen = True
-            self.cornerWindow.show()
             calibrate_screenshot(0, 0, 0, 0, "ScreenCaps/1Calibration")
+            self.cornerWindow.__init__()
+            self.cornerWindow.show()
 
         elif self.cornerOpen is True:
             self.cornerOpen = False
