@@ -32,6 +32,7 @@ import queue
 LENGHT_LA = 792
 LENGHT_HA = 600
 N_MAX_ZERNIKE_POLY = 6
+N_DATA_TO_SAVE = 10
 
 
 class MainWindow(QMainWindow):
@@ -280,7 +281,7 @@ class ImgWindow(QWidget):
         else:
             self.messagelabel.setText("Starting program...")
             #TODO Mettre la sélection de du nombre d'échantillons dans le programme lui-même
-            number = 5
+            number = N_DATA_TO_SAVE
             if self.type == 2:
                 self.mainthread = threading.Thread(daemon=True, target=lambda: self.example_run_hadoc(box, mean, maxes, mins, number))
 
@@ -455,8 +456,9 @@ class CalibWindow(QWidget):
                 elif n % 2 == 1 and m % 2 == 1:
                     idx.append([n, m])
 
+        self.idx = idx
         # label for the Zernike polynomials
-        for i in range(1, len(idx)+1):
+        for i in range(len(idx)):
             exec("self.no_{0} = QLabel(r'{0}.  Z_{1}^{2}')".format(i, idx[i-1][0], idx[i-1][1]))
             exec("self.grid.addWidget(self.no_{0}, {0}, 0)".format(i))
 
@@ -464,7 +466,7 @@ class CalibWindow(QWidget):
         self.labelPosi = QLabel('Starting position')
         self.grid.addWidget(self.labelPosi, 0, 1)
 
-        for i in range(1, len(idx)+1):
+        for i in range(len(idx)):
             exec("self.pos_{0} = QDoubleSpinBox()".format(i))
             exec("self.grid.addWidget(self.pos_{0}, {0}, 1)".format(i))
 
@@ -474,7 +476,7 @@ class CalibWindow(QWidget):
         self.grid.addWidget(self.labelMin, 0, 2)
         self.grid.addWidget(self.labelMax, 0, 3)
 
-        for i in range(1, len(idx)+1):
+        for i in range(len(idx)):
             exec("self.rangeMin_{0} = QDoubleSpinBox()".format(i))
             exec("self.rangeMax_{0} = QDoubleSpinBox()".format(i))
             exec("self.grid.addWidget(self.rangeMin_{0}, {0}, 2)".format(i))
@@ -523,7 +525,7 @@ class CalibWindow(QWidget):
         self.maxes = []
         self.mins = []
 
-        for i in range(1, 21):
+        for i in range(len(self.idx)):
             exec("self.mean.append(self.pos_{0}.value())".format(i))
             exec("self.maxes.append(self.rangeMax_{0}.value())".format(i))
             exec("self.mins.append(self.rangeMin_{0}.value())".format(i))
@@ -539,7 +541,7 @@ class CalibWindow(QWidget):
 
     def extract_mean(self):
         mean = []
-        for i in range(1, 21):
+        for i in range(len(self.idx)):
             exec("mean.append(self.pos_{0}.value())".format(i))
         return mean
 
