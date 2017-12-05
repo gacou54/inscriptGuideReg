@@ -120,7 +120,7 @@ class ImgWindow(QWidget):
 
         # Message système
         self.messagelabel = QLabel(self)
-        self.messagelabel.setText("Test Message")
+        self.messagelabel.setText("")
         bigGrid.addWidget(self.messagelabel, *(9, 0))
 
         # Corrections Initialisation
@@ -144,6 +144,8 @@ class ImgWindow(QWidget):
         self.goBtn.clicked.connect(self.goBtnPushed)
         self.calibBtn.clicked.connect(self.calibBtnPushed)
         self.pauseBtn.clicked.connect(self.pauseBtnPushed)
+
+        self.queueStop = queue.Queue()
 
         # calib
         self.calib = True
@@ -174,8 +176,6 @@ class ImgWindow(QWidget):
             for i in idx:
                 self.zernike_list.append(clp.czernike(i[0], i[1]))
 
-            print(len(idx))
-
             print('Saving...')
             np.save("Zernike/poly.npy", np.array(self.zernike_list))
 
@@ -205,9 +205,10 @@ class ImgWindow(QWidget):
 
     def stopExecution(self):
         self.messagelabel.setText("Stopping measurements...")
-        self.queue.put("Stopping threads")
+        self.queueStop.put("Stopping threads")
         self.goBtn.setText("Go")
         self.goBtn.clicked.connect(self.goBtnPushed)
+
 
     def calibBtnPushed(self):
         self.calib = True
@@ -215,7 +216,6 @@ class ImgWindow(QWidget):
 
         self.calibThread = threading.Thread(target=self.calibrate_zernike, daemon=True)
         self.calibThread.start()
-
     @QtCore.pyqtSlot()
     def img_SLM_procDone(self):
         self.raise_()
@@ -232,6 +232,8 @@ class ImgWindow(QWidget):
             except:
                 pass
             previousMean = meanCalib
+
+
 
     def set_zernike_polynomials(self, weigths):
         """
@@ -266,6 +268,8 @@ class ImgWindow(QWidget):
 
     @QtCore.pyqtSlot()
     def goBtnPushed(self):
+        while not self.queue.empty():
+            self.queue.get()
         box, mean, maxes, mins = pickle.load(open(self.calibWindow.filename, "rb"))
         if not self.calib or len(box) < 4:
             self.messagelabel.setText("No calibration Data: please calibrate the progam")
@@ -274,6 +278,7 @@ class ImgWindow(QWidget):
             self.messagelabel.setText("Program is already running")
             return None
         else:
+            self.messagelabel.setText("Starting program...")
             #TODO Mettre la sélection de du nombre d'échantillons dans le programme lui-même
             number = 5
             if self.type == 2:
@@ -299,23 +304,26 @@ class ImgWindow(QWidget):
         # Prise de données
         print(test_points.shape)
         for point in range(test_points.shape[0]):
-            # implémentation de pause
-            while not self.queue.empty():
-                time.sleep(0.5)
-                # implémentation de stop
-                if self.queue.qsize() > 1:
-                    measuring = False
-                    break
-                self.messagelabel.setText("Measurements paused")
-
             if measuring:
-                self.messagelabel.setText("Measurment progress : {}%".format(100 * (point+1) / test_points.shape[0]))
+                #implémentation de pause
+                while not self.queue.empty():
+                    if measuring:
+                        time.sleep(0.5)
+                        self.messagelabel.setText("Measurements paused")
+                        #implémentation de stop
+                        if not self.queueStop.empty():
+                            measuring = False
+                            self.queueStop.get()
+                            break
 
-                self.set_zernike_polynomials(test_points[point])
+                if measuring:
+                    self.messagelabel.setText("Measurment progress : {}%".format(100 * (point+1) / test_points.shape[0]))
 
-                time.sleep(1)  # pour que le slm change de forme
-                capture_box(x1, y1, x2, y2, "image{}".format(point), directory="ScreenCaps")
-                time.sleep(0.2)
+                    self.set_zernike_polynomials(test_points[point])
+
+                    time.sleep(1)  # pour que le slm change de forme
+                    capture_box(x1, y1, x2, y2, "image{}".format(point), directory="ScreenCaps")
+                    time.sleep(0.2)
 
         score_list = []
         for point in range(test_points.shape[0]):
@@ -353,13 +361,18 @@ class ImgWindow(QWidget):
         all_score = []
         for x in range(number):
             while not self.queue.empty():
-                time.sleep(0.5)
-                if self.queue.qsize() > 1:
-                    measuring = False
-                    break
-                self.messagelabel.setText("Measurements paused")
+                if measuring:
+
+                    time.sleep(0.5)
+                    if not self.queueStop.empty():
+                        self.queueStop.get()
+                        measuring = False
+                        break
 
             if measuring:
+
+                self.messagelabel.setText("Measurements paused")
+
                 self.messagelabel.setText("Progress : {}%".format(100*(x+1)//number))
 
                 loss = self.extract_score(x, x1, y1, x2, y2, point)
@@ -494,6 +507,8 @@ class CalibWindow(QWidget):
 
         self.calibQueue = queue.Queue()
 
+
+
     def loadBtnPushed(self):
         self.loaddialog = QFileDialog()
         self.loaddialog.setDirectory("CalibrationFiles")
@@ -512,6 +527,7 @@ class CalibWindow(QWidget):
             exec("self.mean.append(self.pos_{0}.value())".format(i))
             exec("self.maxes.append(self.rangeMax_{0}.value())".format(i))
             exec("self.mins.append(self.rangeMin_{0}.value())".format(i))
+
 
         self.savedialog = QFileDialog()
         self.savedialog.setDirectory("CalibrationFiles")
@@ -550,6 +566,7 @@ class CornerWindow(QWidget):
         super().__init__()
         self.grid = QGridLayout()
 
+
         self.label = QLabel()
         self.label.setPixmap(QPixmap("ScreenCaps/1Calibration.png"))
         self.label.setObjectName("image")
@@ -568,6 +585,7 @@ class CornerWindow(QWidget):
         self.corners = []
 
     def getPos(self, event):
+
         x = event.pos().x()
         y = event.pos().y()
         self.corners.append(x)
@@ -576,6 +594,7 @@ class CornerWindow(QWidget):
 
         if len(self.corners) == 4:
             self.close()
+
 
 
 if __name__ == '__main__':
