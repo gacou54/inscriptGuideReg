@@ -287,6 +287,7 @@ class ImgWindow(QWidget):
 
             if self.type == 1:
                 self.mainthread = threading.Thread(daemon=True, target=lambda: self.example_run_bayesian(box, mean, maxes, mins, number))
+                #self.example_run_bayesian(box, mean, maxes, mins, number)
 
             self.mainthread.start()
             self.running = True
@@ -351,7 +352,7 @@ class ImgWindow(QWidget):
             maxes = tempmin.copy()
         for x in range(dimension):
             #try:
-                space["{}".format(x)] = choco.uniform(mins[x], maxes[x])
+                space["{}".format(x)] = choco.quantized_uniform(mins[x], maxes[x],0.1)
            # except:
             #    self.messagelabel.setText("Erreur : Un intervalle nul est invalide dans la calibration")
              #   self.running = False
@@ -360,6 +361,7 @@ class ImgWindow(QWidget):
         # pip install sclite3
         # sclite3 TEST.db
         conn = choco.SQLiteConnection("sqlite:///TEST.db")
+        conn.clear()
         conn.lock()
         bay = choco.Bayes(conn, space, clear_db=True)
         (token, point_next) = bay.next()
@@ -411,7 +413,7 @@ class ImgWindow(QWidget):
         time.sleep(1)  # pour que le slm change de forme
         capture_box(x1, y1, x2, y2, "image{}".format(number), directory="ScreenCaps")
         time.sleep(0.2)
-        score = round_score("ScreenCaps/image{}.png".format(number), "image{}contour.png".format(number), save_calibration=True)
+        score = round_score("ScreenCaps/image{}.png".format(number), "image{}contour.png".format(number), save_calibration=False)
         return score
 
 
