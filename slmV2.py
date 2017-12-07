@@ -474,6 +474,7 @@ class CalibWindow(QWidget):
 
         for i in range(len(idx)):
             exec("self.pos_{0} = QDoubleSpinBox()".format(i))
+            exec("self.pos_{0}.setMinimum(int(-99))".format(i))
             exec("self.grid.addWidget(self.pos_{0}, {0}, 1)".format(i))
 
         # range [min, max]
@@ -485,6 +486,8 @@ class CalibWindow(QWidget):
         for i in range(len(idx)):
             exec("self.rangeMin_{0} = QDoubleSpinBox()".format(i))
             exec("self.rangeMax_{0} = QDoubleSpinBox()".format(i))
+            exec("self.rangeMax_{0}.setMinimum(int(-99))".format(i))
+            exec("self.rangeMin_{0}.setMinimum(int(-99))".format(i))
             exec("self.grid.addWidget(self.rangeMin_{0}, {0}, 2)".format(i))
             exec("self.grid.addWidget(self.rangeMax_{0}, {0}, 3)".format(i))
 
