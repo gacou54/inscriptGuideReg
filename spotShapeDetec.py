@@ -83,7 +83,7 @@ def round_score(file_name, target_file_name, save_calibration = False, target_di
         if x != 0:
             total_h += count
     if (np.count_nonzero(idx_h) == 0) or (np.count_nonzero(idx_v) == 0):
-        return 1
+        return 0
     center_x = total_h/np.count_nonzero(idx_h)
     total_v = 0
     count = 0
@@ -105,7 +105,7 @@ def round_score(file_name, target_file_name, save_calibration = False, target_di
     # radius /= radius_mean
     score = 0
     if radius_mean < 0.1:
-        return 1
+        return 0
     for i in radius:
         score += abs(i - radius_mean)/radius_mean
 
