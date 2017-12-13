@@ -296,12 +296,15 @@ class ImgWindow(QWidget):
         measuring = True
         dimension = len(mean)
         x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
-        variances = []
-        for i in range(0, len(maxes)):
-            variances.append(abs(maxes[i] - mins[i]))
 
         print("generating test data")
-        test_points = generate_sequence(mean, variances, dimension, number)
+        if maxes[0] < mins[0]:
+            tempmin = mins
+            tempmaxes = maxes
+            mins = tempmaxes.copy()
+            maxes = tempmin.copy()
+
+        test_points = generate_sequence(mins, maxes, dimension, number)
         print("gathering data")
         # Prise de données
         print(test_points.shape)
@@ -389,7 +392,7 @@ class ImgWindow(QWidget):
                 (token, point_next) = bay.next()
                 point = format_next(point_next)
                 all_pos.append(point)
-                all_score.append(1-loss)
+                all_score.append(loss)
 
         np.savetxt("Score_list", all_score)
         np.savetxt("Point_list", all_pos)
@@ -414,7 +417,7 @@ class ImgWindow(QWidget):
         capture_box(x1, y1, x2, y2, "image{}".format(number), directory="ScreenCaps")
         time.sleep(0.2)
         score = round_score("ScreenCaps/image{}.png".format(number), "image{}contour.png".format(number), save_calibration=False)
-        return score
+        return -(1-score)
 
 
 class ImgSLM(QWidget):

@@ -1,6 +1,7 @@
 import numpy as np
 
-def generate_sequence(mean, variances, dimensions, number):
+
+def generate_sequence(mins, maxes, dimensions, number):
     '''
     On génère une gaussienne centrée sur un point en D dimensions contenant
     N points avec une variance prédéterminée pour chaque dimension
@@ -13,9 +14,10 @@ def generate_sequence(mean, variances, dimensions, number):
 
     initial_values = np.zeros((dimensions, number))
     for x in range(dimensions):
-        initial_values[x] = np.random.normal(mean[x],variances[x],number)
+        initial_values[x] = np.random.uniform(mins[x], maxes[x], number)
 
     return initial_values.transpose()
+
 
 if __name__ == "__main__":
     variances = range(0,100)
